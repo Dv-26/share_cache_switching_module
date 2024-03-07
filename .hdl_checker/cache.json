@@ -1,0 +1,118 @@
+{
+ "builder": {
+  "_version": "<undefined>",
+  "_logger": "hdl_checker.builders.fallback",
+  "_work_folder": "/home/dv/verilog_project/swithching_unit/.hdl_checker",
+  "_builtin_libraries": [],
+  "_added_libraries": [
+   {
+    "name": "default_library",
+    "case_sensitive": false,
+    "__class__": "Identifier"
+   }
+  ],
+  "__class__": "Fallback"
+ },
+ "config_file": [
+  {
+   "name": "/tmp/hdl_checker_project_pid32796.json",
+   "__class__": "Path"
+  },
+  1709799425.79874,
+  "generated"
+ ],
+ "database": {
+  "sources": [
+   {
+    "path": {
+     "name": "/home/dv/verilog_project/swithching_unit/ram.v",
+     "__class__": "Path"
+    },
+    "mtime": 1709799410.868742,
+    "flags": {
+     "source_specific": [],
+     "single": [],
+     "dependencies": []
+    },
+    "dependencies": [],
+    "diags": []
+   },
+   {
+    "path": {
+     "name": "/home/dv/verilog_project/swithching_unit/top.v",
+     "__class__": "Path"
+    },
+    "mtime": 1709798928.7388096,
+    "flags": {
+     "source_specific": [],
+     "single": [],
+     "dependencies": []
+    },
+    "dependencies": [],
+    "diags": []
+   },
+   {
+    "path": {
+     "name": "/home/dv/verilog_project/swithching_unit/fifo.v",
+     "__class__": "Path"
+    },
+    "mtime": 1709799221.0887673,
+    "flags": {
+     "source_specific": [],
+     "single": [],
+     "dependencies": []
+    },
+    "dependencies": [],
+    "diags": []
+   }
+  ],
+  "inferred_libraries": [
+   {
+    "name": "/home/dv/verilog_project/swithching_unit/ram.v",
+    "__class__": "Path"
+   }
+  ],
+  "design_units": [
+   {
+    "owner": {
+     "name": "/home/dv/verilog_project/swithching_unit/fifo.v",
+     "__class__": "Path"
+    },
+    "type_": "entity",
+    "name": {
+     "name": "fifo",
+     "case_sensitive": true,
+     "__class__": "VerilogIdentifier"
+    },
+    "locations": [
+     [
+      22,
+      7
+     ]
+    ],
+    "__class__": "VerilogDesignUnit"
+   },
+   {
+    "owner": {
+     "name": "/home/dv/verilog_project/swithching_unit/ram.v",
+     "__class__": "Path"
+    },
+    "type_": "entity",
+    "name": {
+     "name": "ram",
+     "case_sensitive": true,
+     "__class__": "VerilogIdentifier"
+    },
+    "locations": [
+     [
+      22,
+      7
+     ]
+    ],
+    "__class__": "VerilogDesignUnit"
+   }
+  ],
+  "__class__": "Database"
+ },
+ "__version__": "0.7.4"
+}
