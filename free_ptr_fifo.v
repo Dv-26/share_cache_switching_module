@@ -48,7 +48,7 @@ wire wr_en;
 integer i;
 
 initial begin
-    for(i=0;i<2**w;i=i+1)begin
+    for(i=0;i<2**DATA_BIT;i=i+1)begin
         array_reg[i] = i;
     end
 end
