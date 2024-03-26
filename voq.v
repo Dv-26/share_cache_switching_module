@@ -19,7 +19,7 @@ module voq
     input       wire    [$clog2(QUEUE_NUB)-1:0]     rd_client,
 
     output      wire    [QUEUE_NUB-1:0]             queue_empty,
-    output      reg                                 queue_full
+    output      wire                                queue_full
 );
 
 
@@ -126,15 +126,7 @@ generate
     end
 endgenerate
 
-
-integer n;
-always @(*)begin
-    queue_full = ptrqueue_full[0];
-    for(n=1;n<QUEUE_NUB;n=n+1)begin
-        queue_full = queue_full | ptrqueue_full[n];
-    end
-end
-
 assign sram_rd_addr = ptrqueue_out[rd_client];
+assign queue_full   = free_ptr_empty;
 
 endmodule
