@@ -1,2 +1,2 @@
 `define PORT_NUB_TOTAL 16
-`define DATA_WIDTH 8
+`define DATA_WIDTH 1

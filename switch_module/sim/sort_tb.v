@@ -26,8 +26,8 @@ wire    [DATA_WIDTH-1:0]                data_out[PORT_NUB_TOTAL-1:0];
 generate 
     genvar i;
     for(i=0; i<16; i=i+1)begin :loop
-        assign {tx_port_out[i],rx_port_out[i],data_out[i]} = port_out[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT];
-        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {tx_port_in[i],rx_port_in[i],data_in[i]};
+        assign {rx_port_out[i],tx_port_out[i],data_out[i]} = port_out[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT];
+        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {rx_port_in[i],tx_port_in[i],data_in[i]};
     end
 endgenerate
 
@@ -45,20 +45,38 @@ sort_module
     .port_out(port_out)
 );
 
-integer j;
+task update;
+    integer j;
+    begin
+        @(posedge clk)begin
+
+            for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
+               rx_port_in[j] = $random % PORT_NUB_TOTAL;
+               // rx_port_in[j] = 0;
+               // data_in[j] = 0;
+            end
+
+        end
+    end
+endtask
+
 
 initial 
 begin
 
-    for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
-       tx_port_in[j] = PORT_NUB_TOTAL-1 - j;
-       // rx_port_in[j] = 0;
-       // data_in[j] = 0;
-    end
-    clk = 0;
+    clk = 1;
     rst_n = 0;
     #(5*`CLK_TIME);
     rst_n = 1;
+    #(5*`CLK_TIME);
+
+    repeat(10)begin
+        update();
+        // tx_port_in[0] = 4;
+        // tx_port_in[1] = 1;
+        // tx_port_in[2] = 3;
+        // tx_port_in[3] = 2;
+    end
 
     #(20*`CLK_TIME);
     $stop();

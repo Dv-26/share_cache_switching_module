@@ -30,17 +30,17 @@ always @(posedge clk or negedge rst_n)begin
     end
     else begin
         if(rx_ports_1 < rx_ports_2)begin
-            port_out_1 <= {tx_ports_1,rx_ports_1,data_1};
-            port_out_2 <= {tx_ports_2,rx_ports_2,data_2};
+            port_out_1 <= {rx_ports_1,tx_ports_1,data_1};
+            port_out_2 <= {rx_ports_2,tx_ports_2,data_2};
         end
         else begin
-            port_out_2 <= {tx_ports_1,rx_ports_1,data_1};
-            port_out_1 <= {tx_ports_2,rx_ports_2,data_2};
+            port_out_2 <= {rx_ports_1,tx_ports_1,data_1};
+            port_out_1 <= {rx_ports_2,tx_ports_2,data_2};
         end
     end
 end
 
-assign {tx_ports_1,rx_ports_1,data_1} = port_in_1;
-assign {tx_ports_2,rx_ports_2,data_2} = port_in_2;
+assign {rx_ports_1,tx_ports_1,data_1} = port_in_1;
+assign {rx_ports_2,tx_ports_2,data_2} = port_in_2;
 
 endmodule

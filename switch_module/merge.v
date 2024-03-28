@@ -47,10 +47,10 @@ generate
             .clk(clk),
             .rst_n(rst_n),
             .port_in_1(port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT]),
-            .port_out_2(port_out[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT]),
+            .port_out_1(port_out[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT]),
 
             .port_in_2(port_in[(i+2)*WIDTH_PORT-1 : (i+1)*WIDTH_PORT]),
-            .port_out_1(port_out[(i+2)*WIDTH_PORT-1 : (i+1)*WIDTH_PORT])
+            .port_out_2(port_out[(i+2)*WIDTH_PORT-1 : (i+1)*WIDTH_PORT])
         );
 
     end
