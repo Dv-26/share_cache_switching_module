@@ -24,7 +24,7 @@ wire                                valid_1;
 
 wire    [$clog2(PORT_NUB)-1 : 0]    tx_ports_2,rx_ports_2;    
 wire    [DATA_WIDTH-1 : 0]          data_2;
-wire                                valid_1;
+wire                                valid_2;
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)begin
         port_out_1 <= {WIDTH_RORT{1'b0}};

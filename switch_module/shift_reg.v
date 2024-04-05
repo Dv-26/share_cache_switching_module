@@ -40,7 +40,7 @@ generate
                 end
             end
 
-            if(i == NUB-1)begin
+            if(i == DELAY-1)begin
                 assign port_out[(j+1)*WIDTH-1 : j*WIDTH] = node_reg;
             end
             else begin

@@ -1,24 +1,21 @@
 `timescale 1ns/1ns
-`include "./defind.vh"
+`include "../defind.vh"
+`define CLK_TIME 2
 
-module switch_module
-(
-    input       wire                                clk,
-    input       wire                                rst_n,
 
-    input       wire    [WIDTH_TOTAL-1 : 0]      port_in,
-    output      wire    [WIDTH_OUT_TOTAL-1 : 0]     port_out,
-    output      wire    [PORT_NUB**2-1 : 0]         out_vaild
-);
+module switch_tb();
+
+reg                                     clk,rst_n;
+
+always #(`CLK_TIME/2) clk = !clk;
 
 localparam  PORT_NUB = `PORT_NUB_TOTAL;
 localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
 localparam  DATA_WIDTH  =   `DATA_WIDTH;
-
 localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_TOTAL  =   PORT_NUB * WIDTH_PORT; 
-localparam  WIDTH_OUT_TOTAL =   PORT_NUB * WIDTH_TOTAL; 
+localparam  WIDTH_TOTAL =   PORT_NUB * WIDTH_PORT; 
 
+reg                                     clk,rst_n;
 wire    [WIDTH_TOTAL-1:0]               sort_port_in;
 wire    [WIDTH_TOTAL-1:0]               sort_port_out;
 
@@ -51,8 +48,6 @@ sort_module
     .port_in(sort_port_in), 
     .port_out(sort_port_out)
 );
-
-assign  sort_port_in = port_in;
 
 localparam  CONTROL_WIDTH_IN            = $clog2(PORT_NUB_TOTAL) + 1;
 localparam  CONTROL_WIDTH_IN_TOTAL      = CONTROL_WIDTH_IN*PORT_NUB_TOTAL ;
@@ -152,11 +147,64 @@ generate
             .port_vaild(filter_vaild[i])
         );
 
-        assign port_out[(i+1)*WIDTH_TOTAL-1 : i*WIDTH_TOTAL] = filter_out[i];
-        assign out_vaild[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = filter_vaild[i];
     end
 
 endgenerate
+
+task init;
+    integer j;        
+    begin
+        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
+            port_valid_in[j] = 0;
+            rx_port_in[j] = 0;
+            tx_port_in[j] = 0;
+        end
+    end
+endtask
+
+task update;
+    integer j;
+    begin
+        @(posedge clk)begin
+
+            for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
+                port_valid_in[j] = 1;
+                // rx_port_in[j] = $random % PORT_NUB_TOTAL;
+                rx_port_in[j] = PORT_NUB_TOTAL-1 - j;
+                tx_port_in[j] = j;
+                data_in[j] = 0;
+            end
+            #`CLK_TIME;
+            for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
+                port_valid_in[j] = 0;
+            end
+        end
+    end
+endtask
+
+
+initial 
+begin
+
+    init();
+    clk = 1;
+    rst_n = 0;
+    #(5*`CLK_TIME);
+    rst_n = 1;
+    #(5*`CLK_TIME);
+
+    repeat(20)begin
+        update();
+        // tx_port_in[0] = 4;
+        // tx_port_in[1] = 1;
+        // tx_port_in[2] = 3;
+        // tx_port_in[3] = 2;
+    end
+
+    #(20*`CLK_TIME);
+    $stop();
+
+end
 
 endmodule
 

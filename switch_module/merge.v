@@ -13,7 +13,7 @@ module merge_module
     output      wire    [WIDTH_TOTAL - 1 : 0]   port_out
 );
 
-localparam  WIDTH_PORT  =   2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
+localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
 localparam  WIDTH_TOTAL =   PORT_NUB * WIDTH_PORT; 
 
 generate 

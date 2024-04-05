@@ -64,7 +64,7 @@ generate
         #(
             .PORT_NUB(PORT_NUB)
         )
-        odd_even_sott
+        odd_even_sort
         (
             .clk(clk),
             .rst_n(rst_n),

@@ -11,21 +11,21 @@ module prefix_sum
 );
 
 localparam  WIDTH_PORT  = $clog2(`PORT_NUB_TOTAL);
-localparam  WIDTH_TOTAL = `PORT_NUB_TOTAL * WIDTH_PORT;
+localparam  WIDTH_TOTAL = (`PORT_NUB_TOTAL + 1) * WIDTH_PORT;
 
-wire [WIDTH_PORT-1 : 0] port_in_f[WIDTH_PORT-1 : 0][`PORT_NUB_TOTAL-1 : 0];
+wire [WIDTH_PORT-1 : 0] port_in_f[WIDTH_PORT-1 : 0][`PORT_NUB_TOTAL : 0];
 
 generate
     genvar i,j;
 
-    for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop
+    for(i=0; i<`PORT_NUB_TOTAL+1; i=i+1)begin: loop
         assign port_in_f[0][i] = port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT];
     end
 
     for(i=0; i<$clog2(`PORT_NUB_TOTAL); i=i+1)begin: loop1
         
 
-        for(j=0; j<`PORT_NUB_TOTAL; j=j+1)begin: loop2
+        for(j=0; j<`PORT_NUB_TOTAL+1; j=j+1)begin: loop2
 
             reg [WIDTH_PORT-1 : 0]  node_reg;
 

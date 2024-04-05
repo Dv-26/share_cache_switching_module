@@ -40,13 +40,13 @@ generate
 
         for(j=0; j<`PORT_NUB_TOTAL; j=j+1)begin: loop2
 
-            reg [WIDTH_TOTAL-1 : 0] port_reg;
+            reg [WIDTH_PORT-1 : 0] port_reg;
             always @(posedge clk or negedge rst_n)begin
                 if(!rst_n)begin
                     port_reg <= {WIDTH_PORT{1'b0}};
                 end
                 else begin
-                    if(sel_f[i])
+                    if(sel_f[i][i])
                         port_reg <= port_f[i][(j+`PORT_NUB_TOTAL-2**i)%`PORT_NUB_TOTAL]; 
                     else
                         port_reg <= port_f[i][j];
