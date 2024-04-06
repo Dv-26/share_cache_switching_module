@@ -1,3 +1,5 @@
+`include "./defind.vh"
+
 module dc_fifo_input
 #(
     parameter   DATA_BIT    = `INPUT_DATA_WIDTH,
