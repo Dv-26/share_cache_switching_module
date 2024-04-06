@@ -30,9 +30,9 @@ module data_controller
     parameter   PORT_NUM_BIT      = $clog2(`PORT_NUB_TOTAL), //2**几个端口
     parameter   PRI_NUM_BIT       = $clog2(`PRI_NUM),
     parameter   DATABUF_HIGH_NUM  = $clog2(`DATABUF_HIGH_LIMIT_NUM), //2**几个数据包 支持多少个数据包
-    parameter   CRC32_LENGTH      = CRC32_LENGTH_WIDTH, //CRC32校验长度
-    parameter   INPUT_HIGH_LIMIT  = INPUT_HIGH_LIMIT_NUM,
-    parameter   INPUT_LOW_LIMIT   = INPUT_LOW_LIMIT_NUM
+    parameter   CRC32_LENGTH      = `CRC32_LENGTH_WIDTH, //CRC32校验长度
+    parameter   INPUT_HIGH_LIMIT  = `INPUT_HIGH_LIMIT_NUM,
+    parameter   INPUT_LOW_LIMIT   = `INPUT_LOW_LIMIT_NUM
 )
 (
     input wire clk,
