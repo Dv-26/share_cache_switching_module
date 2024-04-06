@@ -1,4 +1,6 @@
 `timescale 1ns / 1ps
+`include "./defind.vh"
+
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -23,14 +25,14 @@
 
 module data_controller 
 #(
-    parameter   INPUT_DATA_BIT    = 64,
-    parameter   OUTPUT_DATA_BIT   = 73, 
-    parameter   PORT_NUM_BIT      = 4, //2**¼¸¸ö¶Ë¿Ú
-    parameter   PRI_NUM_BIT       = 3,
-    parameter   DATABUF_HIGH_NUM  = 8, //2**¼¸¸öÊı¾İ°ü Ö§³Ö¶àÉÙ¸öÊı¾İ°ü
-    parameter   CRC32_LENGTH      = 32, //CRC32Ğ£Ñé³¤¶È
-    parameter   INPUT_HIGH_LIMIT  = 128,
-    parameter   INPUT_LOW_LIMIT   = 8
+    parameter   INPUT_DATA_BIT    = `INPUT_DATA_WIDTH,
+    parameter   OUTPUT_DATA_BIT   = `OUTPUT_DATA_WIDTH, 
+    parameter   PORT_NUM_BIT      = $clog2(`PORT_NUB_TOTAL), //2**å‡ ä¸ªç«¯å£
+    parameter   PRI_NUM_BIT       = $clog2(`PRI_NUM),
+    parameter   DATABUF_HIGH_NUM  = $clog2(`DATABUF_HIGH_LIMIT_NUM), //2**å‡ ä¸ªæ•°æ®åŒ… æ”¯æŒå¤šå°‘ä¸ªæ•°æ®åŒ…
+    parameter   CRC32_LENGTH      = CRC32_LENGTH_WIDTH, //CRC32æ ¡éªŒé•¿åº¦
+    parameter   INPUT_HIGH_LIMIT  = INPUT_HIGH_LIMIT_NUM,
+    parameter   INPUT_LOW_LIMIT   = INPUT_LOW_LIMIT_NUM
 )
 (
     input wire clk,
@@ -46,28 +48,28 @@ module data_controller
     output reg data_valid,
     output reg error
 );
-    //×´Ì¬»ú»ù±¾±äÁ¿ĞÅÏ¢
-    localparam WAIT_DATA     = 2'd0;//µÈ´ıÊı¾İ°ü
-    localparam RECEIVING = 2'd1;//¿ªÊ¼½ÓÊÕ
-    localparam VALIDATE = 2'd2;//Êı¾İÑéÖ¤
-    localparam local_port = 4'd0;//±íÊ¾ÕâÊÇ¶Ë¿Ú0
+    //çŠ¶æ€æœºåŸºæœ¬å˜é‡ä¿¡æ¯
+    localparam WAIT_DATA     = 2'd0;//ç­‰å¾…æ•°æ®åŒ…
+    localparam RECEIVING = 2'd1;//å¼€å§‹æ¥æ”¶
+    localparam VALIDATE = 2'd2;//æ•°æ®éªŒè¯
+    localparam local_port = 4'd0;//è¡¨ç¤ºè¿™æ˜¯ç«¯å£0
     reg [1:0] current_state;
     reg [1:0] next_state;
     
-    // ÓÃÓÚ´æ´¢Êı¾İ³¤¶ÈºÍ¶Ë¿ÚĞÅÏ¢µÄ¼Ä´æÆ÷
+    // ç”¨äºå­˜å‚¨æ•°æ®é•¿åº¦å’Œç«¯å£ä¿¡æ¯çš„å¯„å­˜å™¨
     reg [PORT_NUM_BIT - 1:0] port_info;//4bit
     reg [PRI_NUM_BIT - 1:0] priority_bits;//3bit
-    //reg [10:0] frame_length; // ¼ÙÉèÖ¡³¤¶È×î´ó1024£¬ĞèÒª11Î»±íÊ¾
-    reg [DATABUF_HIGH_NUM - 1:0] frame_num; //Êı¾İÖ¡¿éÊı
+    //reg [10:0] frame_length; // å‡è®¾å¸§é•¿åº¦æœ€å¤§1024ï¼Œéœ€è¦11ä½è¡¨ç¤º
+    reg [DATABUF_HIGH_NUM - 1:0] frame_num; //æ•°æ®å¸§å—æ•°
     
-    //ÖĞ¼äÏà¹Ø±äÁ¿
+    //ä¸­é—´ç›¸å…³å˜é‡
     reg [PORT_NUM_BIT - 1:0] out_port_info;//4bit
     reg [PRI_NUM_BIT - 1:0] out_priority_bits;//3bit
     reg [CRC32_LENGTH - 1:0] out_crc;
-    reg [DATABUF_HIGH_NUM - 1:0] out_frame_num; //Êä³öÊı¾İÖ¡¿éÊı
-    reg out_isfirst;//À´ÅĞ¶Ï¸ÃÊı¾İÖ¡ÊÇ·ñµÚÒ»Ö¡
+    reg [DATABUF_HIGH_NUM - 1:0] out_frame_num; //è¾“å‡ºæ•°æ®å¸§å—æ•°
+    reg out_isfirst;//æ¥åˆ¤æ–­è¯¥æ•°æ®å¸§æ˜¯å¦ç¬¬ä¸€å¸§
     
-    //crc32Ïà¹Ø±äÁ¿
+    //crc32ç›¸å…³å˜é‡
     reg crc_en;
     reg crc_rst;
     wire [CRC32_LENGTH - 1:0] crc_out;
@@ -75,7 +77,7 @@ module data_controller
     reg vld_isfinish;
     reg [INPUT_DATA_BIT - 1:0] wr_crc_data;
     
-    //fifoÏà¹Ø±äÁ¿
+    //fifoç›¸å…³å˜é‡
     wire [INPUT_DATA_BIT - 1:0] fifo_data_out;
     reg fifo_rst;
     reg fifo_wr_en;
@@ -88,7 +90,7 @@ module data_controller
     reg fifo_rd_info_en;
     wire fifo_rd_info_empty;
     
-    //CRC32Ä£¿é
+    //CRC32æ¨¡å—
     crc32_64bit crc32 (
         .data_in(wr_crc_data), 
         .crc_en(crc_en), 
@@ -96,11 +98,11 @@ module data_controller
         .rst(crc_rst), 
         .clk(clk)
         );
-    //fifoÄ£¿é
+    //fifoæ¨¡å—
     dc_fifo_input fifo_data (
       .rst_n(~fifo_rst),                  // input wire rst
       .wr_clk(clk),            // input wire wr_clk
-      .rd_clk(~clk),            // È¡·´Ê±ÖÓ£¬´í¿ª¶ÁĞ´
+      .rd_clk(~clk),            // å–åæ—¶é’Ÿï¼Œé”™å¼€è¯»å†™
       .wr_data(fifo_input_data),                  // input wire [63 : 0] din
       .wr_en(fifo_wr_en),              // input wire wr_en
       .rd_en(fifo_rd_en),              // input wire rd_en
@@ -110,7 +112,7 @@ module data_controller
     dc_fifo_input_data_info fifo_data_info (
       .rst_n(~fifo_rst),                  // input wire rst
       .wr_clk(clk),            // input wire wr_clk
-      .rd_clk(~clk),            // È¡·´Ê±ÖÓ£¬´í¿ª¶ÁĞ´
+      .rd_clk(~clk),            // å–åæ—¶é’Ÿï¼Œé”™å¼€è¯»å†™
       .wr_data(fifo_input_data_info),                  // input wire [63 : 0] din
       .wr_en(fifo_wr_info_en),              // input wire wr_en
       .rd_en(fifo_rd_info_en),              // input wire rd_en
@@ -118,23 +120,23 @@ module data_controller
       .empty(fifo_rd_info_empty)
     );
 
-    // ×´Ì¬»ú³õÊ¼×´Ì¬ÉèÖÃ
+    // çŠ¶æ€æœºåˆå§‹çŠ¶æ€è®¾ç½®
     initial begin
-        current_state <= WAIT_DATA;//µÈ´ıÊı¾İ
-        //ÎªipºË³õÊ¼»¯¸³Öµ£¬±ÜÃâ¸ß×èÌ¬
+        current_state <= WAIT_DATA;//ç­‰å¾…æ•°æ®
+        //ä¸ºipæ ¸åˆå§‹åŒ–èµ‹å€¼ï¼Œé¿å…é«˜é˜»æ€
         IP_full <= 0;
         almost_full <= 0;
         data_valid <= 0;
         error <= 0;
         data <=0;
-        //crc32Ïà¹Ø±äÁ¿
+        //crc32ç›¸å…³å˜é‡
         crc_en <= 0;
         crc_rst <= 1;
-        //fifo±äÁ¿
+        //fifoå˜é‡
         fifo_wr_en <= 0;
         fifo_rd_en <= 0;
         fifo_rst <=0;
-        //×´Ì¬»úÄÚ²¿±äÁ¿
+        //çŠ¶æ€æœºå†…éƒ¨å˜é‡
         frame_num <= 0;
         out_frame_num <= 0;
         out_isfirst <= 0;
@@ -144,33 +146,33 @@ module data_controller
         
     end
 
-    // ×´Ì¬»ú×ª»»Âß¼­
+    // çŠ¶æ€æœºè½¬æ¢é€»è¾‘
     always @(posedge clk) begin
-        if (rst) begin//ÖØÖÃĞÅºÅ´¦ÀíÂß¼­
-            current_state <= WAIT_DATA;//µÈ´ıÊı¾İ
-            //ÎªipºË³õÊ¼»¯¸³Öµ£¬±ÜÃâ¸ß×èÌ¬
+        if (rst) begin//é‡ç½®ä¿¡å·å¤„ç†é€»è¾‘
+            current_state <= WAIT_DATA;//ç­‰å¾…æ•°æ®
+            //ä¸ºipæ ¸åˆå§‹åŒ–èµ‹å€¼ï¼Œé¿å…é«˜é˜»æ€
             IP_full <= 0;
             almost_full <= 0;
             data_valid <= 0;
             error <= 0;
             data <=0;
-            //crc32Ïà¹Ø±äÁ¿
+            //crc32ç›¸å…³å˜é‡
             crc_en <= 0;
             crc_rst <= 1;
-            //fifo±äÁ¿
+            //fifoå˜é‡
             fifo_wr_en <= 0;
             fifo_rd_en <= 0;
             fifo_rst <=0;
-            //×´Ì¬»úÄÚ²¿±äÁ¿
+            //çŠ¶æ€æœºå†…éƒ¨å˜é‡
             frame_num <= 0;
-            fifo_rst <= 1;//ÖØÖÃfifo
+            fifo_rst <= 1;//é‡ç½®fifo
         end else begin
             fifo_rst <= 0;
-            current_state <= next_state; //×´Ì¬»úÇĞ»»×´Ì¬
+            current_state <= next_state; //çŠ¶æ€æœºåˆ‡æ¢çŠ¶æ€
         end
         
         
-        if (wr_sop == 0 && wr_vld == 1 && error == 0) begin//Êı¾İ¿ªÊ¼´«Êä£¬ÆôÓÃCRC32Ä£¿é
+        if (wr_sop == 0 && wr_vld == 1 && error == 0) begin//æ•°æ®å¼€å§‹ä¼ è¾“ï¼Œå¯ç”¨CRC32æ¨¡å—
             crc_rst <= 0;
             crc_en <= 1;
             wr_crc_data <= wr_data;
@@ -179,16 +181,16 @@ module data_controller
                 port_info <= wr_data[PORT_NUM_BIT - 1:0];
                 priority_bits <= wr_data[PORT_NUM_BIT + PRI_NUM_BIT - 1:PORT_NUM_BIT];
             end else begin
-                fifo_wr_en <= 1;//´ò¿ªfifo
+                fifo_wr_en <= 1;//æ‰“å¼€fifo
                 fifo_input_data <= wr_data;
             end
         end
         
-        if (current_state == RECEIVING && wr_eop && error == 0) begin //ÅĞ¶ÏÊı¾İ·¢ËÍÊÇ·ñ½áÊø
+        if (current_state == RECEIVING && wr_eop && error == 0) begin //åˆ¤æ–­æ•°æ®å‘é€æ˜¯å¦ç»“æŸ
             data_valid <= (frame_num >= INPUT_LOW_LIMIT && frame_num <= INPUT_HIGH_LIMIT);
-            vld_isfinish <= 0;//¸ÃÎ»ÓÃÓÚÅĞ¶ÏÄ£¿éÊÇ·ñ·¢³ö¿ØÖÆÖ¡¸ø½»»»µ¥ÔªÄ£¿é
+            vld_isfinish <= 0;//è¯¥ä½ç”¨äºåˆ¤æ–­æ¨¡å—æ˜¯å¦å‘å‡ºæ§åˆ¶å¸§ç»™äº¤æ¢å•å…ƒæ¨¡å—
             fifo_input_data <= 0;
-            fifo_wr_en <= 0;//µ±Êı¾İ°ü´«ÊäÍê³ÉÊ±£¬¹Ø±ÕfifoµÄĞ´Èë
+            fifo_wr_en <= 0;//å½“æ•°æ®åŒ…ä¼ è¾“å®Œæˆæ—¶ï¼Œå…³é—­fifoçš„å†™å…¥
         end
         
         if (current_state == VALIDATE && wr_eop == 0 && error == 0) begin
@@ -197,7 +199,7 @@ module data_controller
         end
     end
     
-    // ×´Ì¬»úÏÂÒ»¸ö×´Ì¬ºÍÏà¹ØÂß¼­
+    // çŠ¶æ€æœºä¸‹ä¸€ä¸ªçŠ¶æ€å’Œç›¸å…³é€»è¾‘
     always @(*) begin
         case (current_state)
             WAIT_DATA: begin
@@ -206,13 +208,13 @@ module data_controller
                 fifo_wr_info_en <= 0;
                 fifo_input_data_info <= PORT_NUM_BIT + PRI_NUM_BIT + DATABUF_HIGH_NUM + CRC32_LENGTH - 1'd0;
                 data_valid <= 0;
-                frame_num<=0;//½ÓÊÕÊı¾İÖ¡¸öÊı
+                frame_num<=0;//æ¥æ”¶æ•°æ®å¸§ä¸ªæ•°
                 if (wr_sop  && error == 0) begin
                     next_state <= RECEIVING;
                 end
             end
             RECEIVING: begin
-                if (wr_eop  && error == 0) begin //ÅĞ¶ÏÊı¾İ·¢ËÍÊÇ·ñ½áÊø
+                if (wr_eop  && error == 0) begin //åˆ¤æ–­æ•°æ®å‘é€æ˜¯å¦ç»“æŸ
                     next_state <= VALIDATE;
                 end else begin
                     next_state <= RECEIVING;
@@ -220,14 +222,14 @@ module data_controller
             end
             VALIDATE: begin
                 if(wr_eop == 0 && error == 0) begin
-                    if (data_valid == 0) begin //³¬³öÊı¾İÖ¡½ÓÊÕÏŞÖÆ
-                        error <= 1;//´íÎóÎ»À­¸ß
+                    if (data_valid == 0) begin //è¶…å‡ºæ•°æ®å¸§æ¥æ”¶é™åˆ¶
+                        error <= 1;//é”™è¯¯ä½æ‹‰é«˜
                     end else begin 
                         fifo_input_data_info[PORT_NUM_BIT - 1:0] <= port_info;
                         fifo_input_data_info[PORT_NUM_BIT + PRI_NUM_BIT - 1:PORT_NUM_BIT] <= priority_bits;
                         fifo_input_data_info[PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH - 1:PORT_NUM_BIT + PRI_NUM_BIT] <= crc_out;
-                        fifo_input_data_info[PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH + DATABUF_HIGH_NUM - 1:PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH] <= frame_num;//ÒªÊä³öµÄÊı¾İÖ¡Êı
-                        fifo_wr_info_en <= 1;//ÆôÓÃFIFO_DATA_INFO
+                        fifo_input_data_info[PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH + DATABUF_HIGH_NUM - 1:PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH] <= frame_num;//è¦è¾“å‡ºçš„æ•°æ®å¸§æ•°
+                        fifo_wr_info_en <= 1;//å¯ç”¨FIFO_DATA_INFO
                     end
                 end
                 next_state <= WAIT_DATA;
@@ -238,15 +240,15 @@ module data_controller
         endcase
     end
     
-    always @(posedge clk) begin //Õâ¸ö²¿·ÖÀ´Êä³öÊı¾İ
-        if (out_frame_num > 0) begin//²»µÈÓÚ0Ê±£¬´ú±íÓĞĞèÒªÊä³öµÄÊı¾İ
-            if (out_isfirst == 1) begin//µÚÒ»´ÎÊä³ö ½«¿ØÖÆÖ¡´«Êä¸ø½»»»µ¥Ôª
+    always @(posedge clk) begin //è¿™ä¸ªéƒ¨åˆ†æ¥è¾“å‡ºæ•°æ®
+        if (out_frame_num > 0) begin//ä¸ç­‰äº0æ—¶ï¼Œä»£è¡¨æœ‰éœ€è¦è¾“å‡ºçš„æ•°æ®
+            if (out_isfirst == 1) begin//ç¬¬ä¸€æ¬¡è¾“å‡º å°†æ§åˆ¶å¸§ä¼ è¾“ç»™äº¤æ¢å•å…ƒ
                 out_isfirst <= 0;
-                rr_vld <= 1;//À­¸ß±íÊ¾Êä³öµÄÊı¾İÓĞĞ§
-                data[0] <= 1;//½»»»µ¥ÔªÖĞµÄÓĞĞ§Î»
-                data[PORT_NUM_BIT:1] <= out_port_info;//Êä³öµÄÄ¿±ê¶Ë¿Ú
-                data[PORT_NUM_BIT + PORT_NUM_BIT:PORT_NUM_BIT + 1] <= local_port;//±¾µØ¶Ë¿ÚµÄ±êÊ¶·û
-                data[PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT:PORT_NUM_BIT + PORT_NUM_BIT + 1] <= out_priority_bits;//ÓÅÏÈ¼¶
+                rr_vld <= 1;//æ‹‰é«˜è¡¨ç¤ºè¾“å‡ºçš„æ•°æ®æœ‰æ•ˆ
+                data[0] <= 1;//äº¤æ¢å•å…ƒä¸­çš„æœ‰æ•ˆä½
+                data[PORT_NUM_BIT:1] <= out_port_info;//è¾“å‡ºçš„ç›®æ ‡ç«¯å£
+                data[PORT_NUM_BIT + PORT_NUM_BIT:PORT_NUM_BIT + 1] <= local_port;//æœ¬åœ°ç«¯å£çš„æ ‡è¯†ç¬¦
+                data[PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT:PORT_NUM_BIT + PORT_NUM_BIT + 1] <= out_priority_bits;//ä¼˜å…ˆçº§
                 data[PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH:PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT + 1] <= out_crc;//crc32
                 //data[OUTPUT_DATA_BIT - 1:PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH + 1] <= OUTPUT_DATA_BIT - PORT_NUM_BIT - PORT_NUM_BIT - PRI_NUM_BIT - CRC32_LENGTH'd0;
             end else begin
@@ -254,8 +256,8 @@ module data_controller
                 if(out_frame_num > 1) begin
                     fifo_rd_en <= 1;
                     data[0] <= 1;
-                    data[PORT_NUM_BIT:1] <= out_port_info;//Êä³öµÄÄ¿±ê¶Ë¿Ú
-                    data[PORT_NUM_BIT + PORT_NUM_BIT:PORT_NUM_BIT + 1] <= local_port;//±¾µØ¶Ë¿ÚµÄ±êÊ¶·û
+                    data[PORT_NUM_BIT:1] <= out_port_info;//è¾“å‡ºçš„ç›®æ ‡ç«¯å£
+                    data[PORT_NUM_BIT + PORT_NUM_BIT:PORT_NUM_BIT + 1] <= local_port;//æœ¬åœ°ç«¯å£çš„æ ‡è¯†ç¬¦
                     data[OUTPUT_DATA_BIT - 1:PORT_NUM_BIT + PORT_NUM_BIT + 1] <= fifo_data_out;
                     rr_vld <= 1;
                 end else begin
@@ -265,7 +267,7 @@ module data_controller
                 end
             end
         end else begin
-            fifo_rd_en <= 0;//fifoÍ£Ö¹¶Á
+            fifo_rd_en <= 0;//fifoåœæ­¢è¯»
             data <= 0;
             rr_vld <= 0;
         end
