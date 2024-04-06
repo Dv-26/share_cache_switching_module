@@ -1,4 +1,4 @@
-`include "./defind.vh"
+`include "./define.vh"
 
 module dc_fifo_input_data_info
 #(
