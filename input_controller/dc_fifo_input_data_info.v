@@ -1,7 +1,7 @@
 module dc_fifo_input
 #(
-    parameter   DATA_BIT    = 64,
-    parameter   DATA_DEPTH  = 8
+    parameter   DATA_BIT    = `INPUT_DATA_WIDTH,
+    parameter   DATA_DEPTH  = $clog2(`DATABUF_HIGH_LIMIT_NUM)
 )
 (
     input   wire                        rst_n,
