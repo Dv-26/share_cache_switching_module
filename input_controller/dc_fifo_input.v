@@ -1,7 +1,9 @@
+`include "./defind.vh"
+
 module dc_fifo_input_data_info
 #(
-    parameter   DATA_BIT    = 47,
-    parameter   DATA_DEPTH  = 5
+    parameter   DATA_BIT    = $clog2(`PORT_NUB_TOTAL) + $clog2(`PRI_NUM) + $clog2(`DATABUF_HIGH_LIMIT_NUM) + `CRC32_LENGTH_WIDTH,
+    parameter   DATA_DEPTH  = $clog2(`DATABUF_HIGH_LIMIT_NUM / `INPUT_LOW_LIMIT_NUM)
 )
 (
     input   wire                        rst_n,
