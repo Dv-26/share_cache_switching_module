@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+  `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -20,9 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module free_ptr_fifo
+module fifo
 #(
-    parameter DATA_BIT = 8                 //数据比特数
+    parameter DATA_BIT = 8,     //数据比特数
+    parameter W = 4             //地址长度
 )
 (
     input   wire                    clk,
@@ -38,20 +39,11 @@ module free_ptr_fifo
     output  wire                    full
 );
 
-
-reg [DATA_BIT-1:0] array_reg [2**DATA_BIT-1:0];
-reg [DATA_BIT-1:0]w_prt_reg,w_prt_n,w_prt_succ;
-reg [DATA_BIT-1:0]r_prt_reg,r_prt_n,r_prt_succ;
+reg [DATA_BIT-1:0] array_reg [2**W-1:0];
+reg [W-1:0]w_prt_reg,w_prt_n,w_prt_succ;
+reg [W-1:0]r_prt_reg,r_prt_n,r_prt_succ;
 reg full_reg,full_reg_n,empty_reg,empty_reg_n;
 wire wr_en;
-
-integer i;
-
-initial begin
-    for(i=0;i<2**DATA_BIT;i=i+1)begin
-        array_reg[i] = i;
-    end
-end
 
 always @(posedge clk) begin
     if(wr_en)
@@ -64,9 +56,9 @@ assign wr_en = wr & ~full_reg;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)begin
-        w_prt_reg <= {DATA_BIT{1'b0}};
-        r_prt_reg <= {DATA_BIT{1'b0}};
-        full_reg  <= 1'b1;
+        w_prt_reg <= {W{1'b0}};
+        r_prt_reg <= {W{1'b0}};
+        full_reg  <= 1'b0;
         empty_reg <= 1'b0;
     end 
     else begin

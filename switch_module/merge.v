@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "./defind.vh"
+`include "../generate_parameter.vh"
 
 module merge_module
 #(
