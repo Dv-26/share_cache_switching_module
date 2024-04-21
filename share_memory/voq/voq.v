@@ -3,17 +3,18 @@
 
 module voq
 #(
-    parameter   DEPTH = 8
+    parameter   DEPTH = 8,
+    parameter   DATA_WIDTH = 10
 )
 (
     input   wire                        clk,
     input   wire                        rst_n,
 
-    input   wire    [WIDTH_PORT-1 : 0]  wr_data,
+    input   wire    [DATA_WIDTH-1 : 0]  wr_data,
     input   wire                        wr_vaild,
     input   wire    [WIDTH_SEL-1 : 0]   wr_sel,
 
-    output  wire    [WIDTH_PORT-1 : 0]  rd_data,
+    output  wire    [DATA_WIDTH-1 : 0]  rd_data,
     input   wire                        rd_vaild,
     input   wire    [WIDTH_SEL-1 : 0]   rd_sel,
 
@@ -30,7 +31,6 @@ wire    rd_en,wr_en;
 
 wire  [WIDTH_ADDR-1 : 0]  multi_channel_in;
 wire  [WIDTH_ADDR-1 : 0]  multi_channel_out;
-wire  [PORT_NUB-1 : 0]    empty;
 
 multi_channel_fifo
 #(
@@ -81,15 +81,15 @@ assign  full = free_ptr_empty;
 
 wire                        sdram_wr_en;
 wire                        sdram_rd_en;
-wire    [WIDTH_PORT-1 : 0]  sdram_wr_data;
-wire    [WIDTH_PORT-1 : 0]  sdram_rd_data;
+wire    [DATA_WIDTH-1 : 0]  sdram_wr_data;
+wire    [DATA_WIDTH-1 : 0]  sdram_rd_data;
 wire    [WIDTH_ADDR-1 : 0]  sdram_wr_addr;
 wire    [WIDTH_ADDR-1 : 0]  sdram_rd_addr;
 
 ram
 #(
     .ADDR_WIDTH(WIDTH_ADDR),
-    .DATA_WIDTH(WIDTH_PORT)
+    .DATA_WIDTH(DATA_WIDTH)
 )
 sram
 (
@@ -110,5 +110,5 @@ assign  sdram_wr_addr = free_ptr_r_data;
 assign  sdram_rd_addr = multi_channel_out;
 
 assign  wr_en = wr_vaild && !full;
-assign  rd_en = rd_vaild;
+assign  rd_en = rd_vaild && !empty[rd_sel];
 endmodule

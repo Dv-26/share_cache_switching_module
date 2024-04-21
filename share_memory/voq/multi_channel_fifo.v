@@ -76,7 +76,7 @@ generate
             if(!rst_n)begin
                 rd_prt_reg[i] <= i;
                 wr_prt_reg[i] <= i;
-                empty_reg[i] <= 1'b0;
+                empty_reg[i] <= 1'b1;
                 full_reg[i] <= 1'b0;
             end
             else begin
