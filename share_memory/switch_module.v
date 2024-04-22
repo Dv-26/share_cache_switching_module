@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "generate_parameter.vh"
+`include "./generate_parameter.vh"
 
 module switch_moudle
 (
@@ -68,8 +68,8 @@ generate
 
         for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin: loop2
             assign  filter_data[i][j] = filter_out[(j+1)*WIDTH_FILTER-1 : j*WIDTH_FILTER] ;
-            assign  filter_vaild[(j+1)*PORT_NUB_TOTAL-1 : j*PORT_NUB_TOTAL] = vaild;
         end
+        assign  filter_vaild[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = vaild;
 
     end
 
@@ -87,7 +87,7 @@ generate
 
     wire    [WIDTH_VOQ0-1 : 0]  voq0_out[PORT_NUB_TOTAL-1 : 0];
     wire    [WIDTH_SEL-1 : 0]   voq0_rd_sel[PORT_NUB_TOTAL-1 : 0];
-    wire    [PORT_NUB_TOTAL : 0]    voq0_rd_en;
+    wire    [PORT_NUB_TOTAL-1 : 0]    voq0_rd_en;
     wire    [PORT_NUB_TOTAL**2-1 : 0]   voq0_empty;
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop3

@@ -29,6 +29,7 @@ always @(posedge clk or negedge rst_n)begin
 end
 
 wire    [WIDTH_SEL-1 : 0]   shift_count[PORT_NUB-1 : 0];
+wire    [WIDTH_SEL-1 : 0]   mux_sel_n[PORT_NUB-1 : 0];
 wire    [PORT_NUB-1 : 0]    unit_en_out[PORT_NUB-1 : 0];
 wire    [PORT_NUB-1 : 0]    voq_empty[PORT_NUB-1 : 0];
 
@@ -40,6 +41,7 @@ generate
 
         wire    [WIDTH_SEL-1 : 0]   shift_out;
         wire    [WIDTH_SEL-1 : 0]   mux_sel_out;
+        reg     [WIDTH_SEL-1 : 0]   mux_sel_reg;
         wire    [WIDTH_SEL-1 : 0]   shift_in;
         wire                        voq_full_in;
         wire    [PORT_NUB-1 : 0]    en_out;
@@ -56,15 +58,20 @@ generate
             .en_out(en_out)
         );
         
-        assign  mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = mux_sel_out;
+        always @(posedge clk)begin
+            mux_sel_reg <= mux_sel_out;
+        end
+
+        assign  mux_sel_n[i]   =   mux_sel_out;
+        assign  mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = mux_sel_reg;
         assign  shift_count[i] = shift_out;
         assign  voq_full_in = full_in[i];
         assign  unit_en_out[i] = en_out;
 
-        if(i == 0)
+        if(i == PORT_NUB-1)
             assign shift_in = cnt;
         else
-            assign shift_in = shift_count[i-1];
+            assign shift_in = shift_count[i+1];
 
         assign voq_empty[i] = empty_in[(i+1)*PORT_NUB-1 : i*PORT_NUB];
 
@@ -93,7 +100,7 @@ generate
             if(!rst_n)
                 wr_out[i] <= 1'b0;
             else
-                wr_out[i] <= rd_out[i] & !voq_empty[i][sel];
+                wr_out[i] <= rd_out[mux_sel_n[i]] & !voq_empty[mux_sel_n[i]][i];
         end
     end
 endgenerate

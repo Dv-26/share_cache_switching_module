@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "../../generate_parameter.vh"
+`include "./generate_parameter.vh"
 `define CLK_TIME 2
 
 
@@ -117,7 +117,7 @@ begin
     rst_n = 1;
     #(5*`CLK_TIME);
 
-    repeat(20)begin
+    repeat(10)begin
         update();
         n = n + 1;
         // tx_port_in[0] = 4;
@@ -129,16 +129,16 @@ begin
     #(30*`CLK_TIME);
 
     repeat(10)begin
-        rd(1,2);
+        rd(0,2);
     end
     repeat(10)begin
-        rd(1,1);
+        rd(0,1);
     end
     repeat(10)begin
-        rd(1,3);
+        rd(0,3);
     end
     repeat(10)begin
-        rd(1,0);
+        rd(0,0);
     end
     // for(n=0; n<PORT_NUB; n=n+1)begin
     //     for(m=0; m<PORT_NUB; m=m+1)begin
