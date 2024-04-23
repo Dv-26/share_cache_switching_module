@@ -26,7 +26,7 @@ wire    [WIDTH_SEL*PORT_NUB-1 : 0]      rd_sel_total;
 reg     [PORT_NUB-1 : 0]                rd_en;
 wire    [PORT_NUB**2-1 : 0]             empty;
 
-reg     [PORT_NUB-1 : 0]                port_valid_in;
+reg     [PORT_NUB-1 : 0]                port_vaild_in;
 reg     [WIDTH_SEL-1 : 0]               rx_port_in[PORT_NUB-1 : 0];
 reg     [WIDTH_SEL-1 : 0]               tx_port_in[PORT_NUB-1 : 0];
 reg     [DATA_WIDTH-1 : 0]              data_in[PORT_NUB-1 : 0];
@@ -39,7 +39,7 @@ generate
     genvar i;
     for(i=0; i<PORT_NUB; i=i+1)begin :loop
         assign data_out[i] = port_out[(i+1)*WIDTH_PORT_OUT-1 : i*WIDTH_PORT_OUT];
-        assign port_in[(i+1)*WIDTH_PORT_IN-1 : i*WIDTH_PORT_IN] = {port_valid_in[i],rx_port_in[i],tx_port_in[i],data_in[i]};
+        assign port_in[(i+1)*WIDTH_PORT_IN-1 : i*WIDTH_PORT_IN] = {port_vaild_in[i],rx_port_in[i],tx_port_in[i],data_in[i]};
         assign rd_sel_total[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = rd_sel[i];
         // assign rd_sel[i] = rd_sel_total[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign empty_out[i] = empty[(i+1)*PORT_NUB-1 : i*PORT_NUB];
@@ -64,52 +64,66 @@ task init;
         for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
             rd_sel[j] = 0;
             rd_en[j] = 0;
-            port_valid_in[j] = 0;
+            port_vaild_in[j] = 0;
             rx_port_in[j] = 0;
             tx_port_in[j] = 0;
         end
     end
 endtask
 
+task tx;
+    // input   integer tx;
+    input   integer rx;
+    integer i,j;
+    begin
+        for(i=0; i<10; i=i+1)begin
+            @(posedge clk)begin
+
+                for(j=0; j<PORT_NUB; j=j+1)begin
+                    port_vaild_in[j] <= 1;
+                    rx_port_in[j] <= rx;
+                    tx_port_in[j] <= j;
+                    data_in[j] <= rx * 10 + i;
+                end
+
+            end
+        end
+        #`CLK_TIME
+        port_vaild_in <= 0;
+    end
+endtask
+
 task rd;
     input   integer rx_sel;
-    input   integer tx_sel;
+    integer i;
     begin
         @(negedge clk)begin
-            rd_sel[rx_sel] <= tx_sel;
-            rd_en[rx_sel] <= 1'b1;
+            for(i=0; i<PORT_NUB; i=i+1)begin: loop
+                if(!empty_out[rx_sel][i])begin
+                    rd_sel[rx_sel] <= i;
+                    rd_en[rx_sel] <= 1'b1;
+                    disable loop;
+                end
+            end
         end
         #(`CLK_TIME);
         rd_en[rx_sel] = 1'b0;
     end
 endtask
 
-integer n = 0;
-task update;
-    integer j;
-    begin
-        @(posedge clk)begin
-
-            for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
-                port_valid_in[j] = 1;
-                // rx_port_in[j] = $random % PORT_NUB_TOTAL;
-                rx_port_in[j] = PORT_NUB_TOTAL-1 - j;
-                tx_port_in[j] = j;
-                data_in[j] = (PORT_NUB_TOTAL-1 - j)*10 + n ;
-            end
-            #`CLK_TIME;
-            for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
-                port_valid_in[j] = 0;
-            end
-        end
-    end
-endtask
+always begin
+    // fork
+        rd(0);
+        // rd(1);
+        // rd(2);
+        // rd(3);
+    // join
+end
 
 
 integer n,m;
 initial 
 begin
-
     init();
     clk = 1;
     rst_n = 0;
@@ -117,39 +131,18 @@ begin
     rst_n = 1;
     #(5*`CLK_TIME);
 
-    repeat(10)begin
-        update();
-        n = n + 1;
-        // tx_port_in[0] = 4;
-        // tx_port_in[1] = 1;
-        // tx_port_in[2] = 3;
-        // tx_port_in[3] = 2;
-    end
+    // tx(0,1);
+
+    tx(0);
+    // fork
+    // join
 
     #(30*`CLK_TIME);
-
-    repeat(10)begin
-        rd(0,2);
-    end
-    repeat(10)begin
-        rd(0,1);
-    end
-    repeat(10)begin
-        rd(0,3);
-    end
-    repeat(10)begin
-        rd(0,0);
-    end
-    // for(n=0; n<PORT_NUB; n=n+1)begin
-    //     for(m=0; m<PORT_NUB; m=m+1)begin
-    //         rd(n,m);
-    //     end
-    // end
-
     #(20*`CLK_TIME);
     $stop();
 
 end
+
 
 endmodule
 

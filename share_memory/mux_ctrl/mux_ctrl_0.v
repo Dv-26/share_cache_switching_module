@@ -26,7 +26,7 @@ generate
 
     for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop0
         for(j=0; j<`PORT_NUB_TOTAL; j=j+1)begin: loop1
-            assign vaild[i][j] = port_vaild[i*`PORT_NUB_TOTAL+j];
+            assign vaild[i][j] = port_vaild[j*`PORT_NUB_TOTAL+i];
         end
         assign mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = sel[i];
     end
