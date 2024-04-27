@@ -1,31 +1,31 @@
-// ÉèÖÃÊ±¼äµ¥Î»ºÍÊ±¼ä¾«¶È
+// è®¾ç½®æ—¶é—´å•ä½å’Œæ—¶é—´ç²¾åº¦
 `timescale 1ns / 1ps
 
 module priority_control_module(
-    input wire clk, // Ê±ÖÓĞÅºÅ
-    input wire reset, // ¸´Î»ĞÅºÅ
-    input wire [PORT_NUB_TOTAL - 1:0] request_signals, // ÇëÇóĞÅºÅÊı×é
-    input wire [PRI_WIDTH - 1:0] priorities, // ÇëÇóĞÅºÅµÄÓÅÏÈ¼¶Êı×é
-    input wire select_scheme, // ÓÅÏÈ¼¶Ñ¡Ôñ·½°¸£¨0£º¹Ì¶¨ÓÅÏÈ¼¶£»1£º¼ÓÈ¨ÂÖÑ¯£©
-    output reg [PORT_WIDTH - 1:0] grant, // Êä³öµÄÊÚÈ¨ĞÅºÅ
-    output reg grant_vld // Êä³öÊÚÈ¨ĞÅºÅµÄÓĞĞ§±êÖ¾
+    input wire clk, // æ—¶é’Ÿä¿¡å·
+    input wire rst_n, // å¤ä½ä¿¡å·
+    input wire [PORT_NUB_TOTAL - 1:0] request_signals, // è¯·æ±‚ä¿¡å·æ•°ç»„
+    input wire [PRI_WIDTH - 1:0] priorities, // è¯·æ±‚ä¿¡å·çš„ä¼˜å…ˆçº§æ•°ç»„
+    input wire select_scheme, // ä¼˜å…ˆçº§é€‰æ‹©æ–¹æ¡ˆï¼ˆ0ï¼šå›ºå®šä¼˜å…ˆçº§ï¼›1ï¼šåŠ æƒè½®è¯¢ï¼‰
+    output reg [PORT_WIDTH - 1:0] grant, // è¾“å‡ºçš„æˆæƒä¿¡å·
+    output reg grant_vld // è¾“å‡ºæˆæƒä¿¡å·çš„æœ‰æ•ˆæ ‡å¿—
 );
-// ÒıÓÃ°üº¬¶Ë¿ÚÊı¡¢ÓÅÏÈ¼¶ÊıµÈ²ÎÊıµÄÎÄ¼ş
+// å¼•ç”¨åŒ…å«ç«¯å£æ•°ã€ä¼˜å…ˆçº§æ•°ç­‰å‚æ•°çš„æ–‡ä»¶
 `include "./generate_parameter.vh"
 
-// ¶¨Òå¾Ö²¿²ÎÊı
-localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL; // ¶¨Òå×Ü¶Ë¿ÚÊı
-localparam  PORT_WIDTH = $clog2(`PORT_NUB_TOTAL); // ¼ÆËã¶Ë¿Ú¿í¶È
-localparam  PRI_WIDTH_SIG = $clog2(`PRI_NUM_TOTAL); // Ã¿¸öÇëÇóµÄÓÅÏÈ¼¶Î»¿í
-localparam  PRI_WIDTH = PORT_NUB_TOTAL * PRI_WIDTH_SIG; // ËùÓĞÇëÇóµÄ×ÜÓÅÏÈ¼¶Î»¿í
+// å®šä¹‰å±€éƒ¨å‚æ•°
+localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL; // å®šä¹‰æ€»ç«¯å£æ•°
+localparam  PORT_WIDTH = $clog2(`PORT_NUB_TOTAL); // è®¡ç®—ç«¯å£å®½åº¦
+localparam  PRI_WIDTH_SIG = $clog2(`PRI_NUM_TOTAL); // æ¯ä¸ªè¯·æ±‚çš„ä¼˜å…ˆçº§ä½å®½
+localparam  PRI_WIDTH = PORT_NUB_TOTAL * PRI_WIDTH_SIG; // æ‰€æœ‰è¯·æ±‚çš„æ€»ä¼˜å…ˆçº§ä½å®½
 
-// ¶¨Òå¼Ä´æÆ÷ºÍÏßÍø
-reg [PRI_WIDTH_SIG - 1:0] fixed_priority_grant; // ¹Ì¶¨ÓÅÏÈ¼¶ÊÚÈ¨
-reg [PRI_WIDTH_SIG - 1:0] wrr_priority_grant; // ¼ÓÈ¨ÂÖÑ¯ÊÚÈ¨
-wire [PRI_WIDTH_SIG - 1:0] fixed_priorities [PORT_NUB_TOTAL - 1:0]; // ¹Ì¶¨ÓÅÏÈ¼¶Êı×é
-reg [PRI_WIDTH_SIG - 1:0] wrr_counters [PORT_NUB_TOTAL - 1:0]; // WRR¼ÆÊıÆ÷Êı×é
-reg [PORT_WIDTH - 1:0] wrr_current; // µ±Ç°WRR·şÎñµÄÇëÇó
-// ÓÅÏÈ¼¶½âÎö£¬¸ù¾İÓÅÏÈ¼¶¿í¶È¶ÔÓÅÏÈ¼¶Êı×é½øĞĞ½âÂë
+// å®šä¹‰å¯„å­˜å™¨å’Œçº¿ç½‘
+reg [PRI_WIDTH_SIG - 1:0] fixed_priority_grant; // å›ºå®šä¼˜å…ˆçº§æˆæƒ
+reg [PRI_WIDTH_SIG - 1:0] wrr_priority_grant; // åŠ æƒè½®è¯¢æˆæƒ
+wire [PRI_WIDTH_SIG - 1:0] fixed_priorities [PORT_NUB_TOTAL - 1:0]; // å›ºå®šä¼˜å…ˆçº§æ•°ç»„
+reg [PRI_WIDTH_SIG - 1:0] wrr_counters [PORT_NUB_TOTAL - 1:0]; // WRRè®¡æ•°å™¨æ•°ç»„
+reg [PORT_WIDTH - 1:0] wrr_current; // å½“å‰WRRæœåŠ¡çš„è¯·æ±‚
+// ä¼˜å…ˆçº§è§£æï¼Œæ ¹æ®ä¼˜å…ˆçº§å®½åº¦å¯¹ä¼˜å…ˆçº§æ•°ç»„è¿›è¡Œè§£ç 
 genvar i;
 generate
     for (i = 0; i < PORT_NUB_TOTAL; i = i + 1) begin : parse_priority
@@ -33,69 +33,69 @@ generate
     end
 endgenerate
 
-// ¹Ì¶¨ÓÅÏÈ¼¶Ñ¡ÔñÂß¼­
+// å›ºå®šä¼˜å…ˆçº§é€‰æ‹©é€»è¾‘
 integer j;
 always @(*) begin
     fixed_priority_grant = 0;
     for (j = 0; j < PORT_NUB_TOTAL; j = j + 1) begin
-        if (request_signals[j] && (select_scheme == 0)) begin // Èç¹ûÇëÇóĞÅºÅÓĞĞ§
-            // ±È½Ï²¢Ñ¡³öÓÅÏÈ¼¶×î¸ß£¨»òÆäËûÖ¸±ê£©µÄÇëÇó½øĞĞÊÚÈ¨
+        if (request_signals[j] && (select_scheme == 0)) begin // å¦‚æœè¯·æ±‚ä¿¡å·æœ‰æ•ˆ
+            // æ¯”è¾ƒå¹¶é€‰å‡ºä¼˜å…ˆçº§æœ€é«˜ï¼ˆæˆ–å…¶ä»–æŒ‡æ ‡ï¼‰çš„è¯·æ±‚è¿›è¡Œæˆæƒ
             fixed_priority_grant = fixed_priorities[j] > fixed_priorities[fixed_priority_grant] ? j[3:0] : fixed_priority_grant;
         end
     end
 end
 
-always @(posedge clk or posedge reset) begin
-    if ((select_scheme == 0)) begin // Èç¹ûÇëÇóĞÅºÅÓĞĞ§
-        grant_vld = 1;
+always @(posedge clk or posedge rst_n) begin
+    if ((select_scheme == 0)) begin // å¦‚æœè¯·æ±‚ä¿¡å·æœ‰æ•ˆ
+        grant_vld <= 1;
     end else begin
-        grant_vld = 0;
+        grant_vld <= 0;
     end
 end
-// ¼ÓÈ¨ÂÖÑ¯(WRR)ÓÅÏÈ¼¶Ñ¡ÔñÂß¼­
+// åŠ æƒè½®è¯¢(WRR)ä¼˜å…ˆçº§é€‰æ‹©é€»è¾‘
 integer g;
-always @(posedge clk or posedge reset) begin
-    if (reset) begin // Èç¹û¸´Î»ĞÅºÅ±»¼¤»î
-        // ³õÊ¼»¯WRR¼ÆÊıÆ÷£¬ÊÚÈ¨×´Ì¬ºÍµ±Ç°·şÎñµÄÇëÇó
+always @(posedge clk or posedge rst_n) begin
+    if (rst_n) begin // å¦‚æœå¤ä½ä¿¡å·è¢«æ¿€æ´»
+        // åˆå§‹åŒ–WRRè®¡æ•°å™¨ï¼ŒæˆæƒçŠ¶æ€å’Œå½“å‰æœåŠ¡çš„è¯·æ±‚
         for (g = 0; g < PORT_NUB_TOTAL; g = g + 1) begin
-            wrr_counters[g] = 0;
+            wrr_counters[g] <= 0;
         end
-        grant_vld = 0;
-        wrr_current = 0;
-        wrr_priority_grant = 0;
-    end else begin // ´¦ÀíWRRÂß¼­
-        if (select_scheme) begin // Èç¹ûÑ¡ÔñWRR·½°¸
+        grant_vld <= 0;
+        wrr_current <= 0;
+        wrr_priority_grant <= 0;
+    end else begin // å¤„ç†WRRé€»è¾‘
+        if (select_scheme) begin // å¦‚æœé€‰æ‹©WRRæ–¹æ¡ˆ
             if (wrr_counters[wrr_current] <= fixed_priorities[wrr_current]) begin
-                // Èç¹ûµ±Ç°ÇëÇóÎ´´ïµ½ÆäÈ¨ÖØÉÏÏŞ
+                // å¦‚æœå½“å‰è¯·æ±‚æœªè¾¾åˆ°å…¶æƒé‡ä¸Šé™
                 if (request_signals[wrr_current]) begin
-                    // ÊÚÈ¨µ±Ç°ÇëÇó
-                    wrr_priority_grant = wrr_current;
-                    grant_vld = 1; // ÉèÖÃÊÚÈ¨ÓĞĞ§
-                    wrr_counters[wrr_current] = wrr_counters[wrr_current] + 1; // ¸üĞÂWRR¼ÆÊıÆ÷
+                    // æˆæƒå½“å‰è¯·æ±‚
+                    wrr_priority_grant <= wrr_current;
+                    grant_vld <= 1; // è®¾ç½®æˆæƒæœ‰æ•ˆ
+                    wrr_counters[wrr_current] <= wrr_counters[wrr_current] + 1; // æ›´æ–°WRRè®¡æ•°å™¨
                 end else begin
-                    // Èç¹ûÎ´½ÓÊÕµ½µ±Ç°ÇëÇó£¬ÒÆ¶¯µ½ÏÂÒ»¸öÇëÇó
-                    grant_vld = 0;
-                    wrr_current = wrr_current + 1;
-                    wrr_counters[wrr_current] = 0;
+                    // å¦‚æœæœªæ¥æ”¶åˆ°å½“å‰è¯·æ±‚ï¼Œç§»åŠ¨åˆ°ä¸‹ä¸€ä¸ªè¯·æ±‚
+                    grant_vld <= 0;
+                    wrr_current <= wrr_current + 1;
+                    wrr_counters[wrr_current] <= 0;
                 end
             end else begin
-                // ÂÖÑ¯ÖÁÏÂÒ»¸öÇëÇó
-                grant_vld = 0;
-                wrr_current = wrr_current + 1;
-                wrr_counters[wrr_current] = 0;
+                // è½®è¯¢è‡³ä¸‹ä¸€ä¸ªè¯·æ±‚
+                grant_vld <= 0;
+                wrr_current <= wrr_current + 1;
+                wrr_counters[wrr_current] <= 0;
             end
-            // ´¦ÀíÑ­»·ÂÖÑ¯
+            // å¤„ç†å¾ªç¯è½®è¯¢
             if (wrr_current > PORT_NUB_TOTAL - 1) begin
-                wrr_current = 0;
+                wrr_current <= 0;
             end
         end
     end
 end
 
-// ×îÖÕÓÅÏÈ¼¶Êä³öÑ¡ÔñÂß¼­
+// æœ€ç»ˆä¼˜å…ˆçº§è¾“å‡ºé€‰æ‹©é€»è¾‘
 always @(*) begin
-    // ¸ù¾İÑ¡Ôñ·½°¸Êä³ö¹Ì¶¨ÓÅÏÈ¼¶»òWRRÓÅÏÈ¼¶grant
-    grant = select_scheme ? wrr_priority_grant : fixed_priority_grant;
+    // æ ¹æ®é€‰æ‹©æ–¹æ¡ˆè¾“å‡ºå›ºå®šä¼˜å…ˆçº§æˆ–WRRä¼˜å…ˆçº§grant
+    grant <= select_scheme ? wrr_priority_grant : fixed_priority_grant;
 end
 
 endmodule 
