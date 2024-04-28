@@ -100,7 +100,7 @@ generate
             if(!rst_n)
                 wr_out[i] <= 1'b0;
             else
-                wr_out[i] <= rd_out[mux_sel_n[i]] & !voq_empty[mux_sel_n[i]][i];
+                wr_out[i] <= rd_out[mux_sel_n[i]] & (!voq_empty[mux_sel_n[i]][i]);
         end
     end
 endgenerate

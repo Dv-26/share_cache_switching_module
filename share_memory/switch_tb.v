@@ -1,6 +1,7 @@
-`timescale 1ns/1ns
+`timescale 1ns/1ps
 `include "./generate_parameter.vh"
-`define CLK_TIME 2
+`define CLK_TIME 4
+`define SIM
 
 
 module switch_tb();
@@ -26,18 +27,39 @@ wire    [WIDTH_SEL*PORT_NUB-1 : 0]      rd_sel_total;
 reg     [PORT_NUB-1 : 0]                rd_en;
 wire    [PORT_NUB**2-1 : 0]             empty;
 
-reg     [PORT_NUB-1 : 0]                port_vaild_in;
-reg     [WIDTH_SEL-1 : 0]               rx_port_in[PORT_NUB-1 : 0];
-reg     [WIDTH_SEL-1 : 0]               tx_port_in[PORT_NUB-1 : 0];
-reg     [DATA_WIDTH-1 : 0]              data_in[PORT_NUB-1 : 0];
+wire    [PORT_NUB-1 : 0]                port_vaild_in;
+wire    [WIDTH_SEL-1 : 0]               rx_port_in[PORT_NUB-1 : 0];
+wire    [WIDTH_SEL-1 : 0]               tx_port_in[PORT_NUB-1 : 0];
+wire    [DATA_WIDTH-1 : 0]              data_in[PORT_NUB-1 : 0];
 
 wire    [DATA_WIDTH-1 : 0]              data_out[PORT_NUB-1 : 0];
 reg     [WIDTH_SEL-1 : 0]               rd_sel[PORT_NUB-1 : 0];
 wire    [PORT_NUB-1 : 0]                empty_out[PORT_NUB-1 : 0];
 
+wire                                    tx_done[PORT_NUB-1 : 0];
+reg                                     tx_start[PORT_NUB-1 : 0];
+reg     [WIDTH_SEL-1 : 0]               rx[PORT_NUB-1 : 0];
+
 generate 
     genvar i;
     for(i=0; i<PORT_NUB; i=i+1)begin :loop
+
+        tx_module
+        #(
+            .dest(i)
+        )
+        tx_module
+        (
+            .clk(clk),
+            .rst_n(rst_n),
+            .start(tx_start[i]),
+            .rx_port(rx_port_in[i]),
+            .tx_port(tx_port_in[i]),
+            .data_port(data_in[i]),
+            .vaild(port_vaild_in[i]),
+            .done(tx_done[i])
+        );
+
         assign data_out[i] = port_out[(i+1)*WIDTH_PORT_OUT-1 : i*WIDTH_PORT_OUT];
         assign port_in[(i+1)*WIDTH_PORT_IN-1 : i*WIDTH_PORT_IN] = {port_vaild_in[i],rx_port_in[i],tx_port_in[i],data_in[i]};
         assign rd_sel_total[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = rd_sel[i];
@@ -64,34 +86,30 @@ task init;
         for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
             rd_sel[j] = 0;
             rd_en[j] = 0;
-            port_vaild_in[j] = 0;
-            rx_port_in[j] = 0;
-            tx_port_in[j] = 0;
+            tx_start[j] = 0;
+            // port_vaild_in[j] = 0;
+            // rx_port_in[j] = 0;
+            // tx_port_in[j] = 0;
         end
     end
 endtask
 
-task tx;
-    // input   integer tx;
-    input   integer rx;
-    integer i,j;
-    begin
-        for(i=0; i<10; i=i+1)begin
-            @(posedge clk)begin
-
-                for(j=0; j<PORT_NUB; j=j+1)begin
-                    port_vaild_in[j] <= 1;
-                    rx_port_in[j] <= rx;
-                    tx_port_in[j] <= j;
-                    data_in[j] <= rx * 10 + i;
-                end
-
-            end
-        end
-        #`CLK_TIME
-        port_vaild_in <= 0;
-    end
-endtask
+// task tx;
+//     input   integer tx;
+//     input   integer rx;
+//
+//     integer i;
+//     begin
+//         for(i=0; i<10; i=i+1)begin
+//             port_vaild_in[tx] <= 1'b1;
+//             rx_port_in[tx]  <= rx;
+//             tx_port_in[tx]  <= tx;
+//             data_in[tx]      <= tx * 10 + rx;
+//             #`CLK_TIME;
+//         end
+//         port_vaild_in[tx] <= 1'b0;
+//     end
+// endtask
 
 task rd;
     input   integer rx_sel;
@@ -106,20 +124,18 @@ task rd;
                 end
             end
         end
-        #(`CLK_TIME);
-        rd_en[rx_sel] = 1'b0;
     end
 endtask
 
-always begin
-    // fork
+initial
+begin
+    while(1)begin
         rd(0);
-        // rd(1);
-        // rd(2);
-        // rd(3);
-    // join
+        rd(1);
+        rd(2);
+        rd(3);
+    end
 end
-
 
 integer n,m;
 initial 
@@ -131,18 +147,17 @@ begin
     rst_n = 1;
     #(5*`CLK_TIME);
 
-    // tx(0,1);
+    tx_start[0] = 1;
+    tx_start[1] = 1;
+    tx_start[2] = 1;
+    tx_start[3] = 1;
 
-    tx(0);
-    // fork
-    // join
-
-    #(30*`CLK_TIME);
-    #(20*`CLK_TIME);
+    #(50*`CLK_TIME);
     $stop();
 
 end
 
-
 endmodule
+
+
 

@@ -7,16 +7,19 @@ module mux_ctrl_0
     input   wire    rst_n,
 
     input   wire    [`PORT_NUB_TOTAL**2-1 : 0]  port_vaild,
+    input   wire    [`PORT_NUB_TOTAL-1 : 0]     full_in,
 
     output  wire    [`PORT_NUB_TOTAL-1 : 0]     wr_en_out,
     output  wire    [WIDTH_SEL_TOTAL-1 : 0]     mux_sel
-
 );
 
 localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL); 
 localparam  WIDTH_SEL_TOTAL = WIDTH_SEL * `PORT_NUB_TOTAL; 
 localparam  WIDTH_PORT_OUT  = 2*WIDTH_SEL+`DATA_WIDTH;
 localparam  WIDTH_TOTAL_OUT = `PORT_NUB_TOTAL * WIDTH_PORT_OUT;
+
+wire    full;
+assign  full = &full_in;
 
 generate
     genvar i,j;
@@ -33,7 +36,7 @@ generate
 
     integer n;
     for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop2
-        assign wr_en_out[i] = | vaild[i];
+        assign wr_en_out[i] = (| vaild[i]) & !full;
         always@(*)begin
             sel[i] = 0;
             for(n=0; n<`PORT_NUB_TOTAL; n=n+1)begin
