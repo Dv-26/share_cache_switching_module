@@ -79,19 +79,30 @@ generate
 
     for(i=0; i<PORT_NUB; i=i+1)begin: loop1
         wire                        mux[PORT_NUB-1 : 0];
-        reg    [WIDTH_SEL-1 : 0]   sel;
+        wire    [PORT_NUB-1 : 0]    encode_in;
+        wire    [WIDTH_SEL-1 : 0]   sel;
 
         for(j=0 ; j<PORT_NUB; j=j+1)begin: loop2
             assign mux[j] = unit_en_out[j][i]; 
+            assign encode_in[j] = mux[j]; 
         end
         
-        always @(*)begin
-            sel = 0;
-            for(n=0; n<PORT_NUB; n=n+1)begin
-                if(mux[n])
-                    sel = n;
-            end
-        end
+        // always @(*)begin
+        //     sel = 0;
+        //     for(n=0; n<PORT_NUB; n=n+1)begin
+        //         if(mux[n])
+        //             sel = n;
+        //     end
+        // end
+
+        encode#(.N(`PORT_NUB_TOTAL))
+        encode
+        (
+            .clk(clk),
+            .rst_n(rst_n),
+            .in(encode_in),
+            .out(sel)
+        );
         
         assign rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = sel;
         assign rd_out[i] = mux[sel];

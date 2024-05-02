@@ -28,7 +28,7 @@ localparam  WIDTH_TOTAL = PORT_NUB * WIDTH_PORT;
 localparam  WIDTH_SEL   = $clog2(PORT_NUB);
 localparam  WIDTH_PRT   = $clog2(PORT_NUB*DEPTH);
 
-reg [WIDTH_PORT-1 : 0]  sram    [PORT_NUB*DEPTH-1 : 0];
+(*ram_style="block"*)reg [WIDTH_PORT-1 : 0]  sram    [PORT_NUB*DEPTH-1 : 0];
 
 
 wire    [WIDTH_PRT-1 : 0]  r_addr,w_addr;

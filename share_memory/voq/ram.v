@@ -22,6 +22,7 @@
 
 module ram
 #(
+    parameter   NAME        =   0 , 
     parameter   ADDR_WIDTH  =   6 , 
     parameter   DATA_WIDTH  =   8
 )
@@ -38,8 +39,27 @@ module ram
 
 );
 
-reg [DATA_WIDTH - 1:0]  ram[2 ** ADDR_WIDTH - 1:0];
+(*ram_style="block"*)reg [DATA_WIDTH - 1:0]  ram[2 ** ADDR_WIDTH - 1:0];
+localparam  DEPTH = 2**ADDR_WIDTH;
 
+integer effectiove_space = DEPTH;
+integer percentage       = 100;
+always @(posedge clk)begin
+    case({wr_en,rd_en})
+        2'b01:begin
+            effectiove_space = effectiove_space + 1;
+        end
+        2'b10:begin
+            effectiove_space = effectiove_space - 1;
+        end
+    endcase
+end
+
+always begin
+    #10
+    percentage = effectiove_space*100/DEPTH;
+    $display("ram%d : %d%%\n", NAME, percentage);
+end
 
 
 always @(posedge clk ) begin

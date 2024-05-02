@@ -40,7 +40,7 @@ module free_ptr_fifo
 
 localparam  WIDTH = $clog2(DEPTH);
 
-reg [WIDTH-1:0] array_reg [DEPTH-1:0];
+(*ram_style="block"*)reg [WIDTH-1:0] array_reg [DEPTH-1:0];
 reg [WIDTH-1:0]w_prt_reg,w_prt_n,w_prt_succ;
 reg [WIDTH-1:0]r_prt_reg,r_prt_n,r_prt_succ;
 reg full_reg,full_reg_n,empty_reg,empty_reg_n;

@@ -26,6 +26,7 @@ wire    [WIDTH_TOTAL_OUT-1:0]           port_out;
 wire    [WIDTH_SEL*PORT_NUB-1 : 0]      rd_sel_total;
 reg     [PORT_NUB-1 : 0]                rd_en;
 wire    [PORT_NUB**2-1 : 0]             empty;
+wire                                    full;
 
 wire    [PORT_NUB-1 : 0]                port_vaild_in;
 wire    [WIDTH_SEL-1 : 0]               rx_port_in[PORT_NUB-1 : 0];
@@ -77,7 +78,8 @@ switch_moudle switch_moudle
     .port_out(port_out),
     .rd_sel(rd_sel_total),
     .rd_en(rd_en),
-    .empty(empty)
+    .empty(empty),
+    .full(full)
 );
 
 task init;
@@ -127,17 +129,17 @@ task rd;
     end
 endtask
 
-initial
-begin
-    while(1)begin
-        rd(0);
-        rd(1);
-        rd(2);
-        rd(3);
-    end
-end
-
 integer n,m;
+
+// initial
+// begin
+//     while(1)begin
+//         for(m=0; m<PORT_NUB; m=m+1)begin
+//             rd(m);
+//         end
+//     end
+// end
+
 initial 
 begin
     init();
@@ -147,12 +149,12 @@ begin
     rst_n = 1;
     #(5*`CLK_TIME);
 
-    tx_start[0] = 1;
-    tx_start[1] = 1;
-    tx_start[2] = 1;
-    tx_start[3] = 1;
+    for(n=0; n<PORT_NUB; n=n+1)begin
+        tx_start[n] = 1;
+    end
 
-    #(50*`CLK_TIME);
+
+    #(100*`CLK_TIME);
     $stop();
 
 end

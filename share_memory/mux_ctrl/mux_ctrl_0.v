@@ -25,7 +25,7 @@ generate
     genvar i,j;
 
     wire    [`PORT_NUB_TOTAL-1 : 0] vaild[`PORT_NUB_TOTAL-1 : 0];
-    reg    [WIDTH_SEL-1 : 0]       sel[`PORT_NUB_TOTAL-1 : 0];
+    wire    [WIDTH_SEL-1 : 0]       sel[`PORT_NUB_TOTAL-1 : 0];
 
     for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop0
         for(j=0; j<`PORT_NUB_TOTAL; j=j+1)begin: loop1
@@ -36,14 +36,37 @@ generate
 
     integer n;
     for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop2
-        assign wr_en_out[i] = (| vaild[i]) & !full;
-        always@(*)begin
-            sel[i] = 0;
-            for(n=0; n<`PORT_NUB_TOTAL; n=n+1)begin
-                if(vaild[i][n])
-                    sel[i] = n;
-            end
-        end
+        // always@(*)begin: encoder
+        //     sel[i] = 0;
+        //     for(n=0; n<`PORT_NUB_TOTAL; n=n+1)begin
+        //         if(vaild[i][n])begin
+        //             sel[i] = n;
+        //             disable encoder;
+        //         end
+        //     end
+        // end
+
+
+        encode#(.N(`PORT_NUB_TOTAL))
+        encode
+        (
+            .clk(clk),
+            .rst_n(rst_n),
+            .in(vaild[i]),
+            .out(sel[i])
+        );
+
+        // assign wr_en_out[i] = (| vaild[i]) & !full;
+
+        xor_tree#(.N(`PORT_NUB_TOTAL))
+        xor_tree
+        (
+            .clk(clk),
+            .rst_n(rst_n),
+            .in(vaild[i]),
+            .out(wr_en_out[i])
+        );
+
     end
 
 endgenerate

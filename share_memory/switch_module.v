@@ -3,15 +3,16 @@
 
 module switch_moudle
 (
-    input   wire                                            clk,
-    input   wire                                            rst_n,
+    input       wire                                        clk,
+    input       wire                                        rst_n,
 
     input       wire    [WIDTH_TOTAL-1 : 0]                 port_in,
     output      wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
 
-    output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty
+    output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty,
+    output      wire                                        full
 );
 
 localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
@@ -83,8 +84,7 @@ generate
         .rst_n(rst_n),
         .port_vaild(filter_vaild),
         .wr_en_out(voq0_wr_en),
-        .mux_sel(mux0_ctrl_mux_sel),
-        .full_in(mux0_ctrl_full_in)
+        .mux_sel(mux0_ctrl_mux_sel)
     );
 
     wire    [WIDTH_VOQ0-1 : 0]  voq0_out[PORT_NUB_TOTAL-1 : 0];
@@ -113,7 +113,8 @@ generate
 
         voq
         #(
-            .DEPTH(16),
+            .NAME(i),
+            .DEPTH(`DEPTH),
             .DATA_WIDTH(WIDTH_VOQ0)
         )
         voq_0
@@ -188,7 +189,8 @@ generate
 
         voq
         #(
-            .DEPTH(16),
+            .NAME(PORT_NUB_TOTAL+i),
+            .DEPTH(`DEPTH),
             .DATA_WIDTH(WIDTH_VOQ1)
         )
         voq_1
@@ -218,5 +220,6 @@ generate
 
 endgenerate
 
+assign full = |mux0_ctrl_full_in;
 
 endmodule

@@ -3,8 +3,9 @@
 
 module voq
 #(
-    parameter   DEPTH = 8,
-    parameter   DATA_WIDTH = 10
+    parameter   NAME        = 0,
+    parameter   DEPTH       = 8,
+    parameter   DATA_WIDTH  = 10
 )
 (
     input   wire                        clk,
@@ -21,6 +22,7 @@ module voq
     output  wire    [PORT_NUB-1 : 0]    empty,
     output  wire                        full
 );
+
 
 localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
 localparam  WIDTH_ADDR  =   $clog2(DEPTH);
@@ -88,6 +90,7 @@ wire    [WIDTH_ADDR-1 : 0]  sdram_rd_addr;
 
 ram
 #(
+    .NAME(NAME),
     .ADDR_WIDTH(WIDTH_ADDR),
     .DATA_WIDTH(DATA_WIDTH)
 )
