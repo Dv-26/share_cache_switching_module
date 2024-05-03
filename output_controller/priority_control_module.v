@@ -7,6 +7,7 @@ module priority_control_module(
     input wire [PORT_NUB_TOTAL - 1:0] request_signals, // 请求信号数组
     input wire [PRI_WIDTH - 1:0] priorities, // 请求信号的优先级数组
     input wire select_scheme, // 优先级选择方案（0：固定优先级；1：加权轮询）
+    input wire arb_en,//是否开始调度
     output reg [PORT_WIDTH - 1:0] grant, // 输出的授权信号
     output reg grant_vld // 输出授权信号的有效标志
 );
@@ -38,20 +39,13 @@ integer j;
 always @(*) begin
     fixed_priority_grant = 0;
     for (j = 0; j < PORT_NUB_TOTAL; j = j + 1) begin
-        if (request_signals[j] && (select_scheme == 0)) begin // 如果请求信号有效
+        if (request_signals[j] && (select_scheme == 0) && (arb_en == 1)) begin // 如果请求信号有效
             // 比较并选出优先级最高（或其他指标）的请求进行授权
             fixed_priority_grant = fixed_priorities[j] > fixed_priorities[fixed_priority_grant] ? j[3:0] : fixed_priority_grant;
         end
     end
 end
 
-always @(posedge clk or posedge rst_n) begin
-    if ((select_scheme == 0)) begin // 如果请求信号有效
-        grant_vld <= 1;
-    end else begin
-        grant_vld <= 0;
-    end
-end
 // 加权轮询(WRR)优先级选择逻辑
 integer g;
 always @(posedge clk or posedge rst_n) begin
@@ -64,7 +58,12 @@ always @(posedge clk or posedge rst_n) begin
         wrr_current <= 0;
         wrr_priority_grant <= 0;
     end else begin // 处理WRR逻辑
-        if (select_scheme) begin // 如果选择WRR方案
+        if ((select_scheme == 0)) begin // 如果请求信号有效
+            grant_vld <= 1;
+        end else begin
+            grant_vld <= 0;
+        end
+        if (select_scheme  && (arb_en == 1)) begin // 如果选择WRR方案
             if (wrr_counters[wrr_current] <= fixed_priorities[wrr_current]) begin
                 // 如果当前请求未达到其权重上限
                 if (request_signals[wrr_current]) begin
