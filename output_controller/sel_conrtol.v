@@ -43,33 +43,33 @@ module sel_control
 
 localparam PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
 localparam PORT_WIDTH = $clog2(`PORT_NUB_TOTAL);
-localparam  PRI_WIDTH_SIG = $clog2(`PRI_NUM_TOTAL); // Ã¿¸öÇëÇóµÄÓÅÏÈ¼¶Î»¿í
-localparam  PRI_WIDTH = PORT_NUB_TOTAL * PRI_WIDTH_SIG; // ËùÓĞÇëÇóµÄ×ÜÓÅÏÈ¼¶Î»¿í
+localparam  PRI_WIDTH_SIG = $clog2(`PRI_NUM_TOTAL); // æ¯ä¸ªè¯·æ±‚çš„ä¼˜å…ˆçº§ä½å®½
+localparam  PRI_WIDTH = PORT_NUB_TOTAL * PRI_WIDTH_SIG; // æ‰€æœ‰è¯·æ±‚çš„æ€»ä¼˜å…ˆçº§ä½å®½
 localparam PRI_NUM_BIT = 3;
 localparam CRC32_LENGTH = 32;
 localparam DATABUF_HIGH_NUM = 7;
 
-// ¶¨Òå×´Ì¬
+// å®šä¹‰çŠ¶æ€
 localparam STATE_WAIT = 0;
 localparam STATE_SEND = 1;
 localparam STATE_WAIT_2 = 2;
 
-// µ±Ç°×´Ì¬
+// å½“å‰çŠ¶æ€
 reg [1:0]current_state;
 
-//regÉùÃ÷
+//regå£°æ˜
 reg [PRI_WIDTH - 1:0] out_priority_bits;
 reg [CRC32_LENGTH - 1:0] out_crc [PORT_NUB_TOTAL - 1:0];
 reg [DATABUF_HIGH_NUM - 1:0] out_frame_num [PORT_NUB_TOTAL - 1:0];
-reg [PORT_NUB_TOTAL - 1:0] out_empty;//¶ÔÓ¦Î»ÊÇ·ñÎª¿Õ
+reg [PORT_NUB_TOTAL - 1:0] out_empty;//å¯¹åº”ä½æ˜¯å¦ä¸ºç©º
 reg [PORT_WIDTH - 1:0] cycle_counters;
 reg rd_sop_reg;
 reg rd_sop_reg_f;
-//CRC32Ïà¹ØµÄ¼Ä´æÆ÷
+//CRC32ç›¸å…³çš„å¯„å­˜å™¨
 reg crc_en;
 wire [CRC32_LENGTH - 1:0]crc_out;
 reg crc_rst;
-//ÓÅÏÈ¼¶¿ØÖÆÏà¹ØµÄ¼Ä´æÆ÷
+//ä¼˜å…ˆçº§æ§åˆ¶ç›¸å…³çš„å¯„å­˜å™¨
 reg select_scheme;
 reg arb_en;
 wire [PORT_WIDTH - 1:0]grant;
@@ -90,13 +90,13 @@ crc32_64bit crc32 (
         );
 
 priority_control_module priority_control(
-    .clk(clk), // Ê±ÖÓĞÅºÅ
-    .rst_n(rst_n), // ¸´Î»ĞÅºÅ
-    .request_signals(~out_empty), // ÇëÇóĞÅºÅÊı×é
-    .priorities(out_priority_bits), // ÇëÇóĞÅºÅµÄÓÅÏÈ¼¶Êı×é
-    .select_scheme(select_scheme), // ÓÅÏÈ¼¶Ñ¡Ôñ·½°¸£¨0£º¹Ì¶¨ÓÅÏÈ¼¶£»1£º¼ÓÈ¨ÂÖÑ¯£©
-    .grant(grant), // Êä³öµÄÊÚÈ¨ĞÅºÅ
-    .grant_vld(grant_vld), // Êä³öÊÚÈ¨ĞÅºÅµÄÓĞĞ§±êÖ¾
+    .clk(clk), // æ—¶é’Ÿä¿¡å·
+    .rst_n(~rst_n), // å¤ä½ä¿¡å·
+    .request_signals(~out_empty), // è¯·æ±‚ä¿¡å·æ•°ç»„
+    .priorities(out_priority_bits), // è¯·æ±‚ä¿¡å·çš„ä¼˜å…ˆçº§æ•°ç»„
+    .select_scheme(select_scheme), // ä¼˜å…ˆçº§é€‰æ‹©æ–¹æ¡ˆï¼ˆ0ï¼šå›ºå®šä¼˜å…ˆçº§ï¼›1ï¼šåŠ æƒè½®è¯¢ï¼‰
+    .grant(grant), // è¾“å‡ºçš„æˆæƒä¿¡å·
+    .grant_vld(grant_vld), // è¾“å‡ºæˆæƒä¿¡å·çš„æœ‰æ•ˆæ ‡å¿—
     .arb_en(arb_en)
 );
 
@@ -104,8 +104,8 @@ priority_control_module priority_control(
 integer j;
 always @(posedge clk or posedge rst_n) begin
     //test <= data_in[PRI_NUM_BIT - 1:0];
-    if (rst_n) begin // Òì²½¸´Î»
-        // ³õÊ¼»¯±äÁ¿
+    if (!rst_n) begin // å¼‚æ­¥å¤ä½
+        // åˆå§‹åŒ–å˜é‡
         rd_sop_reg <= 0;
         rd_eop <= 0;
         rd_vld <= 0;
@@ -117,7 +117,7 @@ always @(posedge clk or posedge rst_n) begin
         grant_result <= 0;
         grant_result_vld <= 0;
         data_is_break <= 0;
-        current_state <= STATE_WAIT; // ³õÊ¼»¯×´Ì¬ÎªµÈ´ıÊı¾İ
+        current_state <= STATE_WAIT; // åˆå§‹åŒ–çŠ¶æ€ä¸ºç­‰å¾…æ•°æ®
         cycle_counters <= 0;
         select_scheme <= 1;
         error <= 0;
@@ -131,17 +131,17 @@ always @(posedge clk or posedge rst_n) begin
         end
         
     end else begin
-        if (cycle_counters > PORT_NUB_TOTAL - 1) begin //STATE_WAIT±éÀúÍêÒ»¸öÖÜÆÚÓÃ£¬
+        if (cycle_counters > PORT_NUB_TOTAL - 1) begin //STATE_WAITéå†å®Œä¸€ä¸ªå‘¨æœŸç”¨ï¼Œ
             cycle_counters <= 0;
         end
         
-        if (arb_en == 1 && grant_vld == 1) begin//ÓÃÓÚ´ÓÖÙ²ÃÄ£¿é¶ÁÈ¡×îĞÂµÄÖÙ²ÃĞÅÏ¢£¬²¢¾ö¶¨STATE_SEND½«×ª·¢ÄÇ¸ö¶Ë¿ÚµÄÊı¾İ
+        if (arb_en == 1 && grant_vld == 1) begin//ç”¨äºä»ä»²è£æ¨¡å—è¯»å–æœ€æ–°çš„ä»²è£ä¿¡æ¯ï¼Œå¹¶å†³å®šSTATE_SENDå°†è½¬å‘é‚£ä¸ªç«¯å£çš„æ•°æ®
             arb_en <= 0;
             grant_result <= grant;
             grant_result_vld <= 1;
         end
         
-        if (current_state == STATE_WAIT) begin //Õâ¸ö²¿·ÖÓÃÓÚ¿ØÖÆÆäËûĞÅºÅ
+        if (current_state == STATE_WAIT) begin //è¿™ä¸ªéƒ¨åˆ†ç”¨äºæ§åˆ¶å…¶ä»–ä¿¡å·
             rd_eop <= 0;
             rd_sop_reg <= 0;
             rd_en <= 0;
@@ -166,18 +166,18 @@ always @(posedge clk or posedge rst_n) begin
                 crc_rst <= 0;
             end
         end
-        //×´Ì¬»úÂß¼­´¦Àí£¬STATE_WAITµÈ´ıÊı¾İ×´Ì¬1£¬ÓÃÓÚ±éÀú¸÷¸ö¶Ë¿Ú¡£STATE_WAIT_2ÓÃÓÚ½ÓÊÕ¶Ë¿ÚÊı¾İ£¬ÒòÎªrd_enÀ­¸ßĞèÒªµÈ´ıÒ»¸öÖÜÆÚ²ÅÓĞÊı¾İ£¬ËùÒÔÌí¼Ó´Ë×´Ì¬¡£STATE_SEND·¢ËÍÊı¾İµÄÂß¼­
+        //çŠ¶æ€æœºé€»è¾‘å¤„ç†ï¼ŒSTATE_WAITç­‰å¾…æ•°æ®çŠ¶æ€1ï¼Œç”¨äºéå†å„ä¸ªç«¯å£ã€‚STATE_WAIT_2ç”¨äºæ¥æ”¶ç«¯å£æ•°æ®ï¼Œå› ä¸ºrd_enæ‹‰é«˜éœ€è¦ç­‰å¾…ä¸€ä¸ªå‘¨æœŸæ‰æœ‰æ•°æ®ï¼Œæ‰€ä»¥æ·»åŠ æ­¤çŠ¶æ€ã€‚STATE_SENDå‘é€æ•°æ®çš„é€»è¾‘
         case (current_state)
             STATE_WAIT: begin
-                if (empty[cycle_counters] != out_empty[cycle_counters] && (error == 0) && (current_state == STATE_WAIT || current_state == STATE_WAIT_2) && rd_eop == 0) begin //ÒâÎ¶×ÅÓĞĞÂµÄÊı¾İ
-                    rd_en <= 1; //À­¸ßÊı¾İ
+                if (empty[cycle_counters] != out_empty[cycle_counters] && (error == 0) && (current_state == STATE_WAIT || current_state == STATE_WAIT_2) && rd_eop == 0) begin //æ„å‘³ç€æœ‰æ–°çš„æ•°æ®
+                    rd_en <= 1; //æ‹‰é«˜æ•°æ®
                     rd_sel <= cycle_counters;
                     out_empty[cycle_counters] <= 0;
                     current_state <= STATE_WAIT_2;
                     wait_data_first <= 1;
                 end else begin
-                    if ((empty == out_empty) && ready == 1 && ~empty) begin //empty!=0ÒâÎ¶×ÅÓĞÊı¾İÊäÈë£¬empty==out_emptyÒâÎ¶×Å¶ÔÓ¦Êı¾İÒÑ¾­ÊäÈëÍê³É
-                        // ¸üĞÂ×´Ì¬
+                    if ((empty == out_empty) && ready == 1 && ~empty) begin //empty!=0æ„å‘³ç€æœ‰æ•°æ®è¾“å…¥ï¼Œempty==out_emptyæ„å‘³ç€å¯¹åº”æ•°æ®å·²ç»è¾“å…¥å®Œæˆ
+                        // æ›´æ–°çŠ¶æ€
                         is_first <= 1;
                         arb_en <= 1;
                         current_state <= STATE_SEND;
@@ -186,29 +186,29 @@ always @(posedge clk or posedge rst_n) begin
                 end
             end
             STATE_SEND: begin
-                // ·¢ËÍÊı¾İµÄÂß¼­
+                // å‘é€æ•°æ®çš„é€»è¾‘
                 if(is_first == 1 && ready == 1 && grant_result_vld)begin
                     is_first <= 0;
                     rd_sop_reg <= 1;
                     rd_en <= 1;
                 end
                 if(grant_result_vld == 1 && ready == 1 && is_first == 0 && rd_sop_reg == 0 && out_frame_num[grant_result] >= 1 && empty[grant_result] == 0) begin
-                    if(data_is_break == 0 && data_is_break_recovery == 0) begin//Êı¾İÖĞ¶ÏÓë»Ö¸´ÅĞ¶Ï£¬ÒòÎª½»»»½á¹¹µÄÎÊÌâ£¬ÈçÓĞ16¸ö¶Ë¿Ú¾ÍµÃµÈ16¸öÖÜÆÚ²Å»áÓĞÒ»¸ö¶ÔÓ¦ÊäÈë¶Ë¿ÚµÄÊı¾İ°ü£¬Õâ¸öµØ·½ÓÃÓÚ»Ö¸´Êä³ö
-                        //Ã»ÓĞ·¢ÉúÖĞ¶ÏµÄÇé¿ö
+                    if(data_is_break == 0 && data_is_break_recovery == 0) begin//æ•°æ®ä¸­æ–­ä¸æ¢å¤åˆ¤æ–­ï¼Œå› ä¸ºäº¤æ¢ç»“æ„çš„é—®é¢˜ï¼Œå¦‚æœ‰16ä¸ªç«¯å£å°±å¾—ç­‰16ä¸ªå‘¨æœŸæ‰ä¼šæœ‰ä¸€ä¸ªå¯¹åº”è¾“å…¥ç«¯å£çš„æ•°æ®åŒ…ï¼Œè¿™ä¸ªåœ°æ–¹ç”¨äºæ¢å¤è¾“å‡º
+                        //æ²¡æœ‰å‘ç”Ÿä¸­æ–­çš„æƒ…å†µ
                         crc_en <= 1;
                         rd_data <= data_in;
                         rd_vld <= 1;
                         out_frame_num[grant_result] <= out_frame_num[grant_result] - 1;
                     end else begin
-                        //·¢ÉúÖĞ¶Ï
+                        //å‘ç”Ÿä¸­æ–­
                         data_is_break <= 0;
                         data_is_break_recovery <= 1;
                     end
-                    if(data_is_break_recovery == 1) begin//¼ÓÕâ¸ö¼Ä´æÆ÷ÅĞ¶ÏÍ¬ÑùÊÇÎªÁË¶à´òÒ»ÅÄ£¬ÒòÎªrd_enÀ­¸ßºó£¬Êı¾İĞèµÈÒ»ÖÜÆÚ²Å´«Êä
+                    if(data_is_break_recovery == 1) begin//åŠ è¿™ä¸ªå¯„å­˜å™¨åˆ¤æ–­åŒæ ·æ˜¯ä¸ºäº†å¤šæ‰“ä¸€æ‹ï¼Œå› ä¸ºrd_enæ‹‰é«˜åï¼Œæ•°æ®éœ€ç­‰ä¸€å‘¨æœŸæ‰ä¼ è¾“
                         data_is_break_recovery <= 0;
                     end
                 end else begin
-                    if (empty[grant_result] == 1) begin //Êı¾İÎ´ÄÜ¼°Ê±´«Êä ÅĞ¶ÏÊı¾İÖĞ¶ÏÊÇ·ñ·¢ÉúµÄÂß¼­
+                    if (empty[grant_result] == 1) begin //æ•°æ®æœªèƒ½åŠæ—¶ä¼ è¾“ åˆ¤æ–­æ•°æ®ä¸­æ–­æ˜¯å¦å‘ç”Ÿçš„é€»è¾‘
                         data_is_break <= 1;
                         rd_data <= 0;
                         crc_en <= 0;
@@ -223,12 +223,12 @@ always @(posedge clk or posedge rst_n) begin
                     end
                 end
                 
-                if (out_frame_num[grant_result] == 0 && arb_en == 0) begin//Êä³ö¿éÊıÎª0Ê±£¬Í£Ö¹Êä³ö
-                    // ·¢ËÍÊı¾İÍê³É£¬¸üĞÂ×´Ì¬ÎªµÈ´ıÊı¾İ
-                    if(out_crc[grant_result] != crc_out && grant_result_vld == 1) begin//ÅĞ¶ÏÓĞÃ»ÓĞ´íÎó
-                        error <= 1;//À­¸ß´ú±í·¢Éú´íÎó
+                if (out_frame_num[grant_result] == 0 && arb_en == 0) begin//è¾“å‡ºå—æ•°ä¸º0æ—¶ï¼Œåœæ­¢è¾“å‡º
+                    // å‘é€æ•°æ®å®Œæˆï¼Œæ›´æ–°çŠ¶æ€ä¸ºç­‰å¾…æ•°æ®
+                    if(out_crc[grant_result] != crc_out && grant_result_vld == 1) begin//åˆ¤æ–­æœ‰æ²¡æœ‰é”™è¯¯
+                        error <= 1;//æ‹‰é«˜ä»£è¡¨å‘ç”Ÿé”™è¯¯
                     end else begin
-                        //Ã»ÓĞ´íÎóµÄÇé¿ö
+                        //æ²¡æœ‰é”™è¯¯çš„æƒ…å†µ
                         rd_eop <= 1;
                         rd_en <= 0;
                         rd_vld <= 0;
@@ -243,8 +243,8 @@ always @(posedge clk or posedge rst_n) begin
                     end
                 end
             end
-            STATE_WAIT_2: begin//½ÓÊÕÊı¾İ×´Ì¬2
-                if(wait_data_first == 1) begin//ÇåÁã¶ÔÓ¦±ê¼ÇÎ»
+            STATE_WAIT_2: begin//æ¥æ”¶æ•°æ®çŠ¶æ€2
+                if(wait_data_first == 1) begin//æ¸…é›¶å¯¹åº”æ ‡è®°ä½
                     wait_data_first <= 0;
                 end else begin
                     out_priority_bits[cycle_counters * PRI_WIDTH_SIG +: PRI_WIDTH_SIG] <= data_in[PRI_NUM_BIT - 1:0];
@@ -261,9 +261,9 @@ always @(posedge clk or posedge rst_n) begin
     end
 end
 
-//ÏÂÃæÕâ¸öalways¿éÓÃÓÚÎªsop´òÅÄ
+//ä¸‹é¢è¿™ä¸ªalwayså—ç”¨äºä¸ºsopæ‰“æ‹
 always@(posedge clk or negedge rst_n)begin
-    if(rst_n)
+    if(!rst_n)
         rd_sop_reg_f <= 0;
     else
         rd_sop_reg_f <= rd_sop_reg;
