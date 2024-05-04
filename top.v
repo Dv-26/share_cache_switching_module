@@ -24,6 +24,7 @@ localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
 localparam  DATA_WIDTH          =   `DATA_WIDTH;
 localparam  DATA_WIDTH_TOTAL    =   PORT_NUB_TOTAL*`DATA_WIDTH;
 
+localparam  WIDTH_SIG_PORT      =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
 localparam  WIDTH_FILTER =  2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
 localparam  WIDTH_VOQ0  =   $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
@@ -64,25 +65,25 @@ generate
         wire                        in_vld;
         wire    [DATA_WIDTH-1 : 0]  in_data;
 
-        in_module in_module
+        //数据输入连线
+        data_controller in_module
         (
             .clk(clk),
-            .rst_n(rst_n),
+            .rst(rst_n),
             .wr_sop(in_wr_sop),
             .wr_eop(in_wr_eop),
             .wr_vld(in_wr_vld),
             .wr_data(in_wr_data),
-            .rx(in_rx),
-            .tx(in_tx),
-            .vld(in_vld),
             .data(in_data)
         );
 
-        assign in_wr_sop    = wr_sop[i];
-        assign in_wr_eop    = wr_eop[i];
-        assign in_wr_vld    = wr_vld[i];
-        assign in_wr_data   = wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
-        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {in_vld,in_rx,in_tx,in_data};
+        assign in_wr_sop         = wr_sop[i];
+        assign in_wr_eop         = wr_eop[i];
+        assign in_wr_vld         = wr_vld[i];
+        assign in_wr_data        = wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
+        assign in_data_data      = in_data[DATA_WIDTH - 1 : 1 + 2 * WIDTH_SIG_PORT];
+        assign in_data_prefix    = in_data[1 + WIDTH_SIG_PORT - 1 : 0];
+        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {in_data_prefix,i,in_data_data};
 
         wire                            out_rd_sop;
         wire                            out_rd_eop;
@@ -94,7 +95,7 @@ generate
         wire    [DATA_WIDTH-1 : 0]      out_data;
         wire    [PORT_NUB_TOTAL : 0]    out_empty;
 
-        out_module out_module
+        sel_control out_module
         (
             .clk(clk),
             .rst_n(rst_n),
@@ -106,18 +107,19 @@ generate
             .rd_en(out_rd_en),
             .rd_sel(out_rd_sel),
             .empty(out_empty),
-            .data(out_data)
+            .data_in(out_data),
+            .error(out_error)
         );
 
         assign  rd_sop[i]   = out_rd_sop;
         assign  rd_eop[i]   = out_rd_eop;
         assign  rd_vld[i]   = out_rd_vld;
-        assign  rd_data[i]  = out_rd_data;
+        assign  rd_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH]  = out_rd_data;
         assign  out_ready   = ready[i];
         assign  rd_en[i]    = out_rd_en;
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
-        assign  out_empty   = empty[i]; 
-        assign  out_data    = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
+        assign  out_empty   = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
+        assign  out_data    = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
 
     end
 
