@@ -148,7 +148,7 @@ module data_controller
 
     // 状态机转换逻辑
     always @(posedge clk) begin
-        if (rst) begin//重置信号处理逻辑
+        if (!rst) begin//重置信号处理逻辑
             current_state <= WAIT_DATA;//等待数据
             //为ip核初始化赋值，避免高阻态
             IP_full <= 0;
