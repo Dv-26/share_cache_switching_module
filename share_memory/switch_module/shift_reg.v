@@ -5,7 +5,7 @@ module  shift_reg
 #(
     parameter   DELAY   =   3,
     parameter   WIDTH   =   3,
-    parameter   NUB     =   3
+    parameter   NUB     =   1
 )
 (
     input       wire                            clk,

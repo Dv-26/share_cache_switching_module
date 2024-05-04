@@ -131,14 +131,14 @@ endtask
 
 integer n,m;
 
-// initial
-// begin
-//     while(1)begin
-//         for(m=0; m<PORT_NUB; m=m+1)begin
-//             rd(m);
-//         end
-//     end
-// end
+initial
+begin
+    while(1)begin
+        for(m=0; m<PORT_NUB; m=m+1)begin
+            rd(m);
+        end
+    end
+end
 
 initial 
 begin

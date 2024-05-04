@@ -84,13 +84,14 @@ always @(posedge clk or negedge rst_n)begin
         data_port <= 0;
     end
     else begin
-        if(cnt_minus)
-            data_port <= data_port + 1;
+        // if(cnt_minus)
+        //     data_port <= data_port + 1;
         if(cnt_load)begin
             rx = $random % PORT_NUB;
             rx_port <= rx;
             tx_port <= dest;
-            data_port <= dest*16;
+            // data_port <= dest*16;
+            data_port <= dest*16 + rx;
         end
         if(cnt_eq)begin
             rx_port <= 0;

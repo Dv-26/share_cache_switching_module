@@ -25,7 +25,7 @@ generate
     genvar i,j;
 
     wire    [`PORT_NUB_TOTAL-1 : 0] vaild[`PORT_NUB_TOTAL-1 : 0];
-    wire    [WIDTH_SEL-1 : 0]       sel[`PORT_NUB_TOTAL-1 : 0];
+    reg     [WIDTH_SEL-1 : 0]       sel[`PORT_NUB_TOTAL-1 : 0];
 
     for(i=0; i<`PORT_NUB_TOTAL; i=i+1)begin: loop0
         for(j=0; j<`PORT_NUB_TOTAL; j=j+1)begin: loop1
@@ -46,19 +46,34 @@ generate
         //     end
         // end
 
+        wire    [WIDTH_SEL-1 : 0]   encode_out;
 
-        encode#(.N(`PORT_NUB_TOTAL))
+        encode#(.N(`PORT_NUB_TOTAL),.PIPELINE(`PIPELINE))
         encode
         (
             .clk(clk),
             .rst_n(rst_n),
             .in(vaild[i]),
-            .out(sel[i])
+            .out(encode_out)
         );
+
+        if(`PIPELINE)begin
+            always@(posedge clk or negedge rst_n)   //流水线对齐
+                if(!rst_n)
+                    sel[i]  <= 0;
+                else
+                    sel[i]  <= encode_out;
+        end
+        else begin
+            always@(*)
+                sel[i] = encode_out;
+        end
+
+        
 
         // assign wr_en_out[i] = (| vaild[i]) & !full;
 
-        xor_tree#(.N(`PORT_NUB_TOTAL))
+        xor_tree#(.N(`PORT_NUB_TOTAL),.PIPELINE(`PIPELINE))
         xor_tree
         (
             .clk(clk),
