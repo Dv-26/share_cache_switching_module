@@ -3,7 +3,7 @@
 
 module  mux_ctrl_1
 #(
-    parameter PIPELINE = 0
+    parameter PIPELINE = 1
 )
 (
     input   wire                            clk,

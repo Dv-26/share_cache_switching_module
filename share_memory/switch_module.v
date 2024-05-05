@@ -12,7 +12,8 @@ module switch_moudle
     input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
 
     output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty,
-    output      wire                                        full
+    output      wire                                        full,
+    output      wire                                        alm_ost_full
 );
 
 localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
@@ -90,6 +91,7 @@ generate
     wire    [WIDTH_VOQ0-1 : 0]  voq0_out[PORT_NUB_TOTAL-1 : 0];
     wire    [WIDTH_SEL-1 : 0]   voq0_rd_sel[PORT_NUB_TOTAL-1 : 0];
     wire    [PORT_NUB_TOTAL-1 : 0]    voq0_rd_en;
+    wire    [PORT_NUB_TOTAL-1 : 0]    voq0_alm_ost_full;
     wire    [PORT_NUB_TOTAL**2-1 : 0]   voq0_empty;
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop3
@@ -104,6 +106,7 @@ generate
         wire    [WIDTH_SEL-1 : 0]   voq_rd_sel;
         wire                         voq_wr_en;
         wire                          voq_full;  
+        wire                          voq_alm_ost_full;  
         wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
 
 
@@ -115,7 +118,8 @@ generate
         #(
             .NAME(i),
             .DEPTH(`DEPTH),
-            .DATA_WIDTH(WIDTH_VOQ0)
+            .DATA_WIDTH(WIDTH_VOQ0),
+            .THRESHOLD(`DEPTH >> 3)
         )
         voq_0
         (
@@ -128,7 +132,8 @@ generate
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
             .full(voq_full),
-            .empty(voq_empty)
+            .empty(voq_empty),
+            .alm_ost_full(voq_alm_ost_full)
         );
 
         assign  mux_sel     = mux0_ctrl_mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
@@ -141,6 +146,7 @@ generate
         assign  voq_wr_sel  = mux_out[WIDTH_FILTER-1 : WIDTH_FILTER-WIDTH_SEL];
         assign  voq0_empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = voq_empty; 
         assign  mux0_ctrl_full_in[i] = voq_full;
+        assign  voq0_alm_ost_full[i] = voq_alm_ost_full;
     end
 
     wire [WIDTH_SEL_TOTAL-1 : 0]    mux_ctrl_mux_sel;
@@ -191,7 +197,8 @@ generate
         #(
             .NAME(PORT_NUB_TOTAL+i),
             .DEPTH(`DEPTH),
-            .DATA_WIDTH(WIDTH_VOQ1)
+            .DATA_WIDTH(WIDTH_VOQ1),
+            .THRESHOLD(WIDTH_SEL-1)
         )
         voq_1
         (
@@ -203,7 +210,7 @@ generate
             .rd_data(voq_rd_data),
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
-            .full(voq_full),
+            .alm_ost_full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，所以满信号要提前 防止丢数据
             .empty(voq_empty)
         );
 
@@ -221,5 +228,6 @@ generate
 endgenerate
 
 assign full = |mux0_ctrl_full_in;
+assign alm_ost_full = |voq0_alm_ost_full;
 
 endmodule

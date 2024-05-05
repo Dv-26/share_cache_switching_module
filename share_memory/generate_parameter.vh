@@ -1,5 +1,5 @@
 `ifndef SIM
-    `define PORT_NUB_TOTAL 8
+    `define PORT_NUB_TOTAL 4
     `define DATA_WIDTH 7
     `define DEPTH   256
 

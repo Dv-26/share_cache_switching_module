@@ -126,34 +126,3 @@ generate
 endgenerate
 
 endmodule
-
-module in_module
-(
-    input   clk,
-    input   rst_n,
-    input   wr_sop,
-    input   wr_eop,
-    input   wr_vld,
-    input   wr_data,
-    output  rx,
-    output  tx,
-    output  vld,
-    output  data
-);
-endmodule
-
-module out_module
-(
-    input   clk,
-    input   rst_n,
-    output  rd_sop,
-    output  rd_eop,
-    output  rd_vld,
-    output  rd_data,
-    input   ready,
-    input   empty,
-    output  rd_en,
-    output  rd_sel,
-    input   data
-);
-endmodule

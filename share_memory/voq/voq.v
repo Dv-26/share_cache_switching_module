@@ -5,6 +5,7 @@ module voq
 #(
     parameter   NAME        = 0,
     parameter   DEPTH       = 8,
+    parameter   THRESHOLD   = 0,
     parameter   DATA_WIDTH  = 10
 )
 (
@@ -20,7 +21,9 @@ module voq
     input   wire    [WIDTH_SEL-1 : 0]   rd_sel,
 
     output  wire    [PORT_NUB-1 : 0]    empty,
-    output  wire                        full
+    output  wire                        full,
+    output  wire                        alm_ost_full,
+    output  wire    [WIDTH_ADDR-1 : 0]  space
 );
 
 
@@ -58,6 +61,7 @@ wire                        free_ptr_wr;
 wire    [WIDTH_ADDR-1:0]    free_ptr_w_data;
 wire    [WIDTH_ADDR-1:0]    free_ptr_r_data;
 wire                        free_ptr_empty;
+wire    [WIDTH_ADDR-1:0]    free_ptr_conut;
 
 free_ptr_fifo
 #(
@@ -72,7 +76,8 @@ free_ptr_fifo
     .w_data(free_ptr_w_data),
     .r_data(free_ptr_r_data),
     .empty(free_ptr_empty),
-    .full()
+    .full(),
+    .count(free_ptr_conut)
 );
 
 assign  free_ptr_rd = wr_en;
@@ -80,6 +85,8 @@ assign  free_ptr_wr = rd_en;
 assign  free_ptr_w_data = multi_channel_out;
 assign  multi_channel_in = free_ptr_r_data ;
 assign  full = free_ptr_empty;
+assign  space = free_ptr_conut;
+assign  alm_ost_full = space <= THRESHOLD;
 
 wire                        sdram_wr_en;
 wire                        sdram_rd_en;

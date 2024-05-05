@@ -20,7 +20,7 @@ module dc_fifo
     output  wire                        full
 );
 
-reg     [DATA_BIT-1:0]      array_reg [2**DATA_DEPTH-1:0];
+(*ram_style="block"*)reg     [DATA_BIT-1:0]      array_reg [2**DATA_DEPTH-1:0];
 
 reg     [DATA_DEPTH:0]      w_prt_reg;
 wire    [DATA_DEPTH:0]      w_prt_gray;

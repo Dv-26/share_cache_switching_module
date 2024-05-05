@@ -31,11 +31,12 @@ module free_ptr_fifo
     input   wire                    rd,
     input   wire                    wr,
 
-    input   wire    [WIDTH-1:0]  w_data,
-    output  wire    [WIDTH-1:0]  r_data,
+    input   wire    [WIDTH-1:0]     w_data,
+    output  wire    [WIDTH-1:0]     r_data,
 
     output  wire                    empty,
-    output  wire                    full
+    output  wire                    full,
+    output  wire    [WIDTH-1:0]     count
 );
 
 localparam  WIDTH = $clog2(DEPTH);
@@ -43,6 +44,7 @@ localparam  WIDTH = $clog2(DEPTH);
 (*ram_style="block"*)reg [WIDTH-1:0] array_reg [DEPTH-1:0];
 reg [WIDTH-1:0]w_prt_reg,w_prt_n,w_prt_succ;
 reg [WIDTH-1:0]r_prt_reg,r_prt_n,r_prt_succ;
+reg [WIDTH-1:0]count_reg,count_reg_n;
 reg full_reg,full_reg_n,empty_reg,empty_reg_n;
 wire wr_en;
 
@@ -69,12 +71,14 @@ always @(posedge clk or negedge rst_n) begin
         r_prt_reg <= {WIDTH{1'b0}};
         full_reg  <= 1'b1;
         empty_reg <= 1'b0;
+        count_reg <= DEPTH;
     end 
     else begin
         w_prt_reg <= w_prt_n;
         r_prt_reg <= r_prt_n;
         full_reg  <= full_reg_n;
         empty_reg <= empty_reg_n;
+        count_reg <= count_reg_n;
     end
 end
 
@@ -88,12 +92,14 @@ always @(*) begin
 
     full_reg_n = full_reg;
     empty_reg_n = empty_reg;
+    count_reg_n = count_reg;
 
     case({rd,wr})
        // 2'b00:      //无操作
         2'b01:begin
             if(~full_reg)begin
                 w_prt_n = w_prt_succ;
+                count_reg_n = count_reg + 1;
                 empty_reg_n = 1'b0;
                 if(w_prt_succ == r_prt_reg)
                     full_reg_n = 1'b1;
@@ -102,6 +108,7 @@ always @(*) begin
         2'b10:begin
             if(~empty_reg)begin
                 r_prt_n = r_prt_succ;
+                count_reg_n = count_reg - 1;
                 full_reg_n = 1'b0;
                 if(r_prt_succ == w_prt_reg)
                     empty_reg_n = 1'b1;
@@ -116,5 +123,6 @@ end
 
 assign full = full_reg;
 assign empty = empty_reg;
+assign count = count_reg;
 
 endmodule
