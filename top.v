@@ -15,6 +15,7 @@ module top_nxn
     output      wire    [PORT_NUB_TOTAL-1 : 0]              rd_eop,          
     output      wire    [PORT_NUB_TOTAL-1 : 0]              rd_vld,          
     output      wire    [DATA_WIDTH_TOTAL-1 : 0]            rd_data,
+    output      wire    [PORT_NUB_TOTAL-1 : 0]              qos_controll,
 
     output      wire                                        full,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              ready
@@ -56,14 +57,15 @@ generate
     genvar i;
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: layout
 
-        wire                        in_wr_sop;
-        wire                        in_wr_eop;
-        wire                        in_wr_vld;
-        wire    [DATA_WIDTH-1 : 0]  in_wr_data;
-        wire    [WIDTH_SEL-1 : 0]   in_rx;
-        wire    [WIDTH_SEL-1 : 0]   in_tx;
-        wire                        in_vld;
-        wire    [DATA_WIDTH-1 : 0]  in_data;
+        wire                             in_wr_sop;
+        wire                             in_wr_eop;
+        wire                             in_wr_vld;
+        wire    [DATA_WIDTH-1 : 0]       in_wr_data;
+        wire    [WIDTH_SEL-1 : 0]        in_rx;
+        wire    [WIDTH_SEL-1 : 0]        in_tx;
+        wire                             in_vld;
+        wire    [DATA_WIDTH-1 : 0]       in_data;
+        wire    [WIDTH_SIG_PORT - 1 : 0] in_local_port_info;
 
         //数据输入连线
         data_controller in_module
@@ -73,6 +75,7 @@ generate
             .wr_sop(in_wr_sop),
             .wr_eop(in_wr_eop),
             .wr_vld(in_wr_vld),
+            .local_port_info(in_local_port_info),
             .wr_data(in_wr_data),
             .data(in_data)
         );
@@ -84,6 +87,7 @@ generate
         assign in_data_data      = in_data[DATA_WIDTH - 1 : 1 + 2 * WIDTH_SIG_PORT];
         assign in_data_prefix    = in_data[1 + WIDTH_SIG_PORT - 1 : 0];
         assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {in_data_prefix,i,in_data_data};
+        assign in_local_port_info = i;
 
         wire                            out_rd_sop;
         wire                            out_rd_eop;
@@ -94,6 +98,7 @@ generate
         wire    [WIDTH_SEL-1 : 0]       out_rd_sel;
         wire    [DATA_WIDTH-1 : 0]      out_data;
         wire    [PORT_NUB_TOTAL : 0]    out_empty;
+        wire                            out_qos_controll; //输出模式控制
 
         sel_control out_module
         (
@@ -111,15 +116,16 @@ generate
             .error(out_error)
         );
 
-        assign  rd_sop[i]   = out_rd_sop;
-        assign  rd_eop[i]   = out_rd_eop;
-        assign  rd_vld[i]   = out_rd_vld;
+        assign  rd_sop[i]        = out_rd_sop;
+        assign  rd_eop[i]        = out_rd_eop;
+        assign  rd_vld[i]        = out_rd_vld;
         assign  rd_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH]  = out_rd_data;
-        assign  out_ready   = ready[i];
-        assign  rd_en[i]    = out_rd_en;
+        assign  out_ready        = ready[i];
+        assign  rd_en[i]         = out_rd_en;
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
-        assign  out_empty   = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
-        assign  out_data    = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
+        assign  out_empty        = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
+        assign  out_data         = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
+        assign  out_qos_controll = qos_controll[(i+1)-1:i];
 
     end
 
