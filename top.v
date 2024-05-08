@@ -126,6 +126,7 @@ generate
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
         assign  out_empty        = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
         assign  out_data         = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
+        assign  port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT] = out_data;//直接读数据不读端口之类的数据
         assign  out_qos_controll = qos_controll[(i+1)-1:i];
 
     end
