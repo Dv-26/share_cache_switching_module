@@ -41,6 +41,7 @@ module data_controller
     input wire wr_eop,
     input wire wr_vld,
     input wire [INPUT_DATA_BIT - 1:0] wr_data,
+    input wire [PORT_NUM_BIT - 1:0] local_port_info,
     output reg IP_full,
     output reg almost_full,
     output reg [OUTPUT_DATA_BIT - 1:0] data,
@@ -242,7 +243,7 @@ module data_controller
     
     always @(posedge clk) begin //这个部分来输出数据
         if (out_frame_num > 0) begin//不等于0时，代表有需要输出的数据
-            if (out_isfirst == 1) begin//第一次输出 将控制帧传输给交换单元
+            if (out_isfirst == 1 && local_port_info != out_port_info) begin//第一次输出 将控制帧传输给交换单元
                 out_isfirst <= 0;
                 rr_vld <= 1;//拉高表示输出的数据有效
                 data[0] <= 1;//交换单元中的有效位
@@ -253,14 +254,17 @@ module data_controller
                 //data[OUTPUT_DATA_BIT - 1:PORT_NUM_BIT + PORT_NUM_BIT + PRI_NUM_BIT + CRC32_LENGTH + 1] <= OUTPUT_DATA_BIT - PORT_NUM_BIT - PORT_NUM_BIT - PRI_NUM_BIT - CRC32_LENGTH'd0;
             end else begin
                 out_frame_num <= out_frame_num - 1;
-                if(out_frame_num > 1) begin
+                out_isfirst <= 0;
+                if(out_frame_num > 1 && local_port_info != out_port_info) begin
                     fifo_rd_en <= 1;
                     data[0] <= 1;
                     data[PORT_NUM_BIT:1] <= out_port_info;//输出的目标端口
                     data[PORT_NUM_BIT + PORT_NUM_BIT:PORT_NUM_BIT + 1] <= local_port;//本地端口的标识符
                     data[OUTPUT_DATA_BIT - 1:PORT_NUM_BIT + PORT_NUM_BIT + 1] <= fifo_data_out;
                     rr_vld <= 1;
-                end else begin
+                end
+                
+                if(out_frame_num <= 1) begin
                     fifo_rd_en <= 0;
                     data <= 0;
                     rr_vld <= 0;
