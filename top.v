@@ -21,7 +21,8 @@ module top_nxn
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
-localparam  DATA_WIDTH          =   `DATA_WIDTH;
+// localparam  DATA_WIDTH          =   `DATA_WIDTH;
+localparam  DATA_WIDTH          =   4;
 localparam  DATA_WIDTH_TOTAL    =   PORT_NUB_TOTAL*`DATA_WIDTH;
 
 localparam  WIDTH_SIG_PORT      =   $clog2(`PORT_NUB_TOTAL);
@@ -119,7 +120,7 @@ generate
         assign  rd_en[i]    = out_rd_en;
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
         assign  out_empty   = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
-        assign  out_data    = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
+        assign  port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT] = out_data;//直接读数据不读端口之类的数据
 
     end
 
