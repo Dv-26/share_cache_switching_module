@@ -16,14 +16,15 @@ module top_nxn
     output      wire    [PORT_NUB_TOTAL-1 : 0]              rd_vld,          
     output      wire    [DATA_WIDTH_TOTAL-1 : 0]            rd_data,
     output      wire    [PORT_NUB_TOTAL-1 : 0]              qos_controll,
+    output      wire    [PORT_NUB_TOTAL-1 : 0]              error,
 
     output      wire                                        full,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              ready
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
-// localparam  DATA_WIDTH          =   `DATA_WIDTH;
-localparam  DATA_WIDTH          =   4;
+localparam  DATA_WIDTH          =   `DATA_WIDTH;
+//  DATA_WIDTH          =   4;
 localparam  DATA_WIDTH_TOTAL    =   PORT_NUB_TOTAL*`DATA_WIDTH;
 
 localparam  WIDTH_SIG_PORT      =   $clog2(`PORT_NUB_TOTAL);
@@ -41,6 +42,7 @@ wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel;
 wire    [PORT_NUB_TOTAL-1 : 0]              rd_en;
 wire    [PORT_NUB_TOTAL**2-1 : 0]           empty;
 wire                                        full;
+
 
 switch_moudle switch_moudle
 (
@@ -67,6 +69,8 @@ generate
         wire                             in_vld;
         wire    [DATA_WIDTH-1 : 0]       in_data;
         wire    [WIDTH_SIG_PORT - 1 : 0] in_local_port_info;
+        wire    [DATA_WIDTH - 1 - 1 - 2 * WIDTH_SIG_PORT : 0] in_data_data;
+        wire    [1 + WIDTH_SIG_PORT - 1 : 0] in_data_prefix;
 
         //数据输入连线
         data_controller in_module
@@ -126,8 +130,9 @@ generate
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
         assign  out_empty        = empty[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
         assign  out_data         = port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT];//直接读数据不读端口之类的数据
-        assign  port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT] = out_data;//直接读数据不读端口之类的数据
+        //assign  port_out[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH + 1 + 2 * WIDTH_SIG_PORT] = out_data;//直接读数据不读端口之类的数据
         assign  out_qos_controll = qos_controll[(i+1)-1:i];
+        assign  out_error = error[(i+1)-1:i];
 
     end
 
