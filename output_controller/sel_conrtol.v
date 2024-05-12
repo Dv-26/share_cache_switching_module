@@ -21,9 +21,6 @@
 
 
 module sel_control
-#(
-    parameter DATA_WIDTH = 64
-)
 (
     input clk,
     input rst_n,
@@ -41,13 +38,14 @@ module sel_control
 
 `include "./generate_parameter.vh"
 
+localparam DATA_WIDTH = `DATA_WIDTH;
 localparam PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
 localparam PORT_WIDTH = $clog2(`PORT_NUB_TOTAL);
 localparam  PRI_WIDTH_SIG = $clog2(`PRI_NUM_TOTAL); // 每个请求的优先级位宽
 localparam  PRI_WIDTH = PORT_NUB_TOTAL * PRI_WIDTH_SIG; // 所有请求的总优先级位宽
-localparam PRI_NUM_BIT = 3;
-localparam CRC32_LENGTH = 32;
-localparam DATABUF_HIGH_NUM = 7;
+localparam PRI_NUM_BIT = $clog2(`PRI_NUM_TOTAL);
+localparam CRC32_LENGTH = `CRC32_LENGTH;
+localparam DATABUF_HIGH_NUM = `DATABUF_HIGH_NUM;
 
 // 定义状态
 localparam STATE_WAIT = 0;
@@ -81,7 +79,7 @@ reg [PRI_NUM_BIT - 1:0]test;
 reg wait_data_first;
 reg data_is_break;
 reg data_is_break_recovery;
-crc32_64bit crc32 (
+crc16_32bit crc32 (
         .data_in(rd_data), 
         .crc_en(crc_en), 
         .crc_out(crc_out), 
