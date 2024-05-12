@@ -1,4 +1,7 @@
 `timescale 1ns / 1ps
+
+`include "./generate_parameter.vh"
+
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -35,8 +38,6 @@ module sel_control
     output reg rd_en,
     output reg error
 );
-
-`include "./generate_parameter.vh"
 
 localparam DATA_WIDTH = `DATA_WIDTH;
 localparam PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
