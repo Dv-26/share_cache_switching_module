@@ -21,7 +21,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-`include "CRC32_D64.v"
+// `include "CRC32_D64.v"
 
 module data_controller 
 #(
@@ -36,7 +36,7 @@ module data_controller
 )
 (
     input wire clk,
-    input wire rst,
+    input wire rst_n,
     input wire wr_sop,
     input wire wr_eop,
     input wire wr_vld,
@@ -122,33 +122,33 @@ module data_controller
     );
 
     // 状态机初始状态设置
-    initial begin
-        current_state <= WAIT_DATA;//等待数据
-        //为ip核初始化赋值，避免高阻态
-        IP_full <= 0;
-        almost_full <= 0;
-        data_valid <= 0;
-        error <= 0;
-        data <=0;
-        //crc32相关变量
-        crc_en <= 0;
-        crc_rst <= 1;
-        //fifo变量
-        fifo_wr_en <= 0;
-        fifo_rd_en <= 0;
-        fifo_rst <=0;
-        //状态机内部变量
-        frame_num <= 0;
-        out_frame_num <= 0;
-        out_isfirst <= 0;
-        out_priority_bits <= 0;
-        priority_bits <=0;
-        port_info <=0;
-        
-    end
+    // initial begin
+    //     current_state <= WAIT_DATA;//等待数据
+    //     //为ip核初始化赋值，避免高阻态
+    //     IP_full <= 0;
+    //     almost_full <= 0;
+    //     data_valid <= 0;
+    //     error <= 0;
+    //     data <=0;
+    //     //crc32相关变量
+    //     crc_en <= 0;
+    //     crc_rst <= 1;
+    //     //fifo变量
+    //     fifo_wr_en <= 0;
+    //     fifo_rd_en <= 0;
+    //     fifo_rst <=0;
+    //     //状态机内部变量
+    //     frame_num <= 0;
+    //     out_frame_num <= 0;
+    //     out_isfirst <= 0;
+    //     out_priority_bits <= 0;
+    //     priority_bits <=0;
+    //     port_info <=0;
+    //     
+    // end
 
     // 状态机转换逻辑
-    always @(posedge clk) begin
+    always @(posedge clk or negedge rst) begin
         if (!rst) begin//重置信号处理逻辑
             current_state <= WAIT_DATA;//等待数据
             //为ip核初始化赋值，避免高阻态

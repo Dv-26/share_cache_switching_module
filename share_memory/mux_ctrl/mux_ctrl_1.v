@@ -1,9 +1,9 @@
 `timescale 1ns/1ns
-`include "../generate_parameter.vh"
+`include "../../generate_parameter.vh"
 
 module  mux_ctrl_1
 #(
-    parameter PIPELINE = 1
+    parameter PIPELINE = 0
 )
 (
     input   wire                            clk,

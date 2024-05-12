@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "./share_memory/generate_parameter.vh"
+`include "generate_parameter.vh"
 
 module top_nxn
 (
@@ -19,6 +19,7 @@ module top_nxn
     output      wire    [PORT_NUB_TOTAL-1 : 0]              error,
 
     output      wire                                        full,
+    output      wire                                        alm_ost_full,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              ready
 );
 
@@ -53,7 +54,8 @@ switch_moudle switch_moudle
     .rd_sel(rd_sel),
     .rd_en(rd_en),
     .empty(empty),
-    .full(full)
+    .full(full),
+    .alm_ost_full(alm_ost_full)
 );
 
 generate
@@ -73,26 +75,29 @@ generate
         wire    [1 + WIDTH_SIG_PORT - 1 : 0] in_data_prefix;
 
         //数据输入连线
-        data_controller in_module
+        in_module#(.num(i))
+        in_module
         (
-            .clk(clk),
-            .rst(rst_n),
+            .in_clk(clk),
+            .out_clk(clk),
+            .rst_n(rst_n),
             .wr_sop(in_wr_sop),
             .wr_eop(in_wr_eop),
             .wr_vld(in_wr_vld),
-            .local_port_info(in_local_port_info),
             .wr_data(in_wr_data),
+            .rx(in_rx),
+            .tx(in_tx),
+            .vld(in_vld),
             .data(in_data)
         );
 
-        assign in_wr_sop         = wr_sop[i];
-        assign in_wr_eop         = wr_eop[i];
-        assign in_wr_vld         = wr_vld[i];
-        assign in_wr_data        = wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
-        assign in_data_data      = in_data[DATA_WIDTH - 1 : 1 + 2 * WIDTH_SIG_PORT];
-        assign in_data_prefix    = in_data[1 + WIDTH_SIG_PORT - 1 : 0];
-        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {in_data_prefix,i,in_data_data};
-        assign in_local_port_info = i;
+        assign in_wr_sop                                    = wr_sop[i];
+        assign in_wr_eop                                    = wr_eop[i];
+        assign in_wr_vld                                    = wr_vld[i];
+        assign in_wr_data                                   = wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
+        assign in_data_data                                 = in_data[DATA_WIDTH - 1 : 1 + 2 * WIDTH_SIG_PORT];
+        assign in_data_prefix                               = in_data[1 + WIDTH_SIG_PORT - 1 : 0];
+        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT]   = {in_vld,in_rx,in_tx,in_data};
 
         wire                            out_rd_sop;
         wire                            out_rd_eop;

@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "./generate_parameter.vh"
+`include "../generate_parameter.vh"
 
 module switch_moudle
 (
@@ -210,7 +210,7 @@ generate
             .rd_data(voq_rd_data),
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
-            .alm_ost_full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，所以满信号要提前 防止丢数据
+            .full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，所以满信号要提前 防止丢数据
             .empty(voq_empty)
         );
 

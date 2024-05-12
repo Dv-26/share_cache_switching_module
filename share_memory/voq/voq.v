@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "../generate_parameter.vh"
+`include "../../generate_parameter.vh"
 
 module voq
 #(

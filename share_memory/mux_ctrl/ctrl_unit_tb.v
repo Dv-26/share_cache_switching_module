@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "../generate_parameter.vh"
+`include "../../generate_parameter.vh"
 `define CLK_TIME 2
 
 module  ctrl_unit_tb();

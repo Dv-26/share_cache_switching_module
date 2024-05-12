@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "./generate_parameter.vh"
+`include "../generate_parameter.vh"
 
 //激励信号生成模块，并不是电路模块
 module tx_module
