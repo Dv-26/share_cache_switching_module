@@ -27,12 +27,13 @@ localparam  DATA_WIDTH      =   `DATA_WIDTH;
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 
 
-wire    [15 : 0]  crc_out;
+wire    [15 : 0]    crc_out;
+wire                crc_rst_n;
 
-crc crc 
+crc16_32bit crc 
 (
     .clk(in_clk),
-    .rst_n(rst_n),
+    .rst_n(crc_rst_n),
     .data_in(wr_data),
     .crc_out(crc_out),
     .crc_en(wr_en)
@@ -59,7 +60,6 @@ dc_fifo
     .rd_en(fifo_rd_en)
 );
 
-assign fifo_rst_n = !(!rst_n | error);
 
 wire    [DATA_WIDTH-1 : 0]  ctrl_data_reg;
 wire            error;
@@ -77,7 +77,8 @@ in_wr_controller_fsm wr_controller
     .valid(wr_vld),
     .ctrl_data_in(wr_data),
     .wr_en(wr_en),
-    .error(error),
+    .fifo_rst_n(fifo_rst_n),
+    .crc_rst_n(crc_rst_n),
     .done(wr_done),
     .ready(wr_control_ready),
     .ctrl_data_reg(ctrl_data_reg)

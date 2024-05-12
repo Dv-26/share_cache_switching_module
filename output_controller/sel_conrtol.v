@@ -84,7 +84,7 @@ crc16_32bit crc32 (
         .data_in(rd_data), 
         .crc_en(crc_en), 
         .crc_out(crc_out), 
-        .rst(crc_rst), 
+        .rst_n(!crc_rst), 
         .clk(clk)
         );
 

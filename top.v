@@ -15,7 +15,7 @@ module top_nxn
     output      wire    [PORT_NUB_TOTAL-1 : 0]              rd_eop,          
     output      wire    [PORT_NUB_TOTAL-1 : 0]              rd_vld,          
     output      wire    [DATA_WIDTH_TOTAL-1 : 0]            rd_data,
-    output      wire    [PORT_NUB_TOTAL-1 : 0]              qos_controll,
+    input       wire    [PORT_NUB_TOTAL-1 : 0]              qos_controll,
     output      wire    [PORT_NUB_TOTAL-1 : 0]              error,
 
     output      wire                                        full,

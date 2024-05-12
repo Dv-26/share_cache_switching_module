@@ -15,7 +15,7 @@ module crc16_32bit(
   input [31:0] data_in,
   input crc_en,
   output [15:0] crc_out,
-  input rst,
+  input rst_n,
   input clk);
 
   reg [15:0] lfsr_q,lfsr_c;
@@ -42,8 +42,8 @@ module crc16_32bit(
 
   end // always
 
-  always @(posedge clk, posedge rst) begin
-    if(rst) begin
+  always @(posedge clk, posedge rst_n) begin
+    if(!rst_n) begin
       lfsr_q <= {16{1'b1}};
     end
     else begin

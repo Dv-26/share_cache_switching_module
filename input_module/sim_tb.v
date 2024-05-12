@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`include "../generate_parameter.vh"
 
 module in_module_tb;
 

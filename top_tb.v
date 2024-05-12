@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-`include "../generate_parameter.vh"
+`include "./generate_parameter.vh"
 
 module top_tb();
 
@@ -40,7 +40,7 @@ wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_sop;
 wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_eop;          
 wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_vld;          
 wire      [DATA_WIDTH_TOTAL-1 : 0]            top_rd_data;
-wire      [PORT_NUB_TOTAL-1 : 0]              top_qos_controll;
+reg       [PORT_NUB_TOTAL-1 : 0]              top_qos_controll;
 wire      [PORT_NUB_TOTAL-1 : 0]              top_error;
 wire                                          top_full;
 wire                                          top_alm_ost_full;
@@ -128,6 +128,7 @@ task init;
     integer i;
     begin
         for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin
+            top_qos_controll[i] = 0;
             top_ready[i] = 0;
             send_start[i] = 0;
             send_dest[i] = 0;
