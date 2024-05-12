@@ -224,7 +224,7 @@ always @(posedge clk or posedge rst_n) begin
                 
                 if (out_frame_num[grant_result] == 0 && arb_en == 0) begin//输出块数为0时，停止输出
                     // 发送数据完成，更新状态为等待数据
-                    if(out_crc[grant_result] != crc_out && grant_result_vld == 1) begin//判断有没有错误
+                    if(out_crc[grant_result] != crc_out && grant_result_vld == 1 && rd_vld == 0) begin//判断有没有错误
                         error <= 1;//拉高代表发生错误
                     end else begin
                         //没有错误的情况
