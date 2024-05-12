@@ -191,7 +191,7 @@ always @(posedge clk or posedge rst_n) begin
                     rd_sop_reg <= 1;
                     rd_en <= 1;
                 end
-                if(grant_result_vld == 1 && ready == 1 && is_first == 0 && rd_sop_reg == 0 && out_frame_num[grant_result] >= 1 && empty[grant_result] == 0) begin
+                if(grant_result_vld == 1 && ready == 1 && is_first == 0 && rd_sop_reg == 0 && out_frame_num[grant_result] >= 1) begin
                     if(data_is_break == 0 && data_is_break_recovery == 0) begin//数据中断与恢复判断，因为交换结构的问题，如有16个端口就得等16个周期才会有一个对应输入端口的数据包，这个地方用于恢复输出
                         //没有发生中断的情况
                         crc_en <= 1;
