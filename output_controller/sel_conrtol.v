@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "./generate_parameter.vh"
+`include "../generate_parameter.vh"
 
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
