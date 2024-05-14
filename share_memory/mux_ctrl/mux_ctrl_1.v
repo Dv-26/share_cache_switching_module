@@ -14,6 +14,7 @@ module  mux_ctrl_1
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] rd_sel,
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] mux_sel,
 
+    input   wire    [WIDTH_SEL_TOTAL-1 : 0] cnt_in,
     input   wire    [PORT_NUB-1 : 0]        full_in,
     input   wire    [PORT_NUB**2-1 : 0]     empty_in
 );
@@ -22,14 +23,6 @@ localparam WIDTH_SEL_TOTAL  = PORT_NUB * WIDTH_SEL;
 localparam WIDTH_SEL        = $clog2(`PORT_NUB_TOTAL);
 localparam PORT_NUB         = `PORT_NUB_TOTAL;
 
-reg [WIDTH_SEL-1 : 0]   cnt;
-
-always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)
-        cnt <= 0;
-    else
-        cnt <= cnt + 1;
-end
 
 wire    [WIDTH_SEL-1 : 0]   shift_count[PORT_NUB-1 : 0];
 wire    [WIDTH_SEL-1 : 0]   mux_sel_n[PORT_NUB-1 : 0];
@@ -65,7 +58,7 @@ generate
         );
         
         if(i == PORT_NUB-1)
-            assign shift_in = cnt;
+            assign shift_in = cnt_in;
         else
             assign shift_in = shift_count[i+1];
 

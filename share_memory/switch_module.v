@@ -6,10 +6,14 @@ module switch_moudle
     input       wire                                        clk,
     input       wire                                        rst_n,
 
-    input       wire    [WIDTH_TOTAL-1 : 0]                 port_in,
+    input       wire    [PORT_NUB_TOTAL-1 : 0]              vld_in,
+    input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rx_in,
+    input       wire    [WIDTH_SEL_TOTAL-1 : 0]             tx_in,
+    input       wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_in,
     output      wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
+    output      wire    [PORT_NUB_TOTAL-1 : 0]              ready,
 
     output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty,
     output      wire                                        full,
@@ -27,16 +31,47 @@ localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT;
 localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
 
+ready_generate ready_generate
+(
+    .clk(clk),
+    .rst_n(rst_n),
+    .cnt_in(shift_select),
+    .vld_in(vld_in), 
+    .rx_in(rx_in),
+    .ready_out(ready)
+);
 
+wire    [WIDTH_TOTAL-1 : 0]             shift_in;
 wire    [WIDTH_TOTAL-1 : 0]             shift_out;
 reg     [WIDTH_SEL-1 : 0]               shift_select;
+
+genvar i,j;
+
+generate
+
+    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: shift_in_layout
+
+        wire                        vld;
+        wire    [WIDTH_SEL-1 : 0]   rx;
+        wire    [WIDTH_SEL-1 : 0]   tx;
+        wire    [DATA_WIDTH-1 : 0]  data;
+
+        assign vld = vld_in[i];
+        assign rx = rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign tx = tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign data = port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
+
+        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {vld,rx,tx,data};
+    end
+
+endgenerate
 
 barrel_shift barrel_shift
 (
     .clk(clk),
     .rst_n(rst_n),
     .select(shift_select),
-    .port_in(port_in), 
+    .port_in(shift_in), 
     .port_out(shift_out)
 );
 
@@ -51,7 +86,6 @@ wire    [WIDTH_FILTER-1 : 0]    filter_data[PORT_NUB_TOTAL-1 : 0][PORT_NUB_TOTAL
 wire    [PORT_NUB_TOTAL**2-1 : 0]  filter_vaild;
 
 generate
-    genvar i,j;
 
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop1
@@ -155,6 +189,7 @@ generate
     wire    [PORT_NUB_TOTAL-1 : 0]  mux_ctrl_rd_out;
     wire    [PORT_NUB_TOTAL-1 : 0]  mux_ctrl_wr_out;
     wire    [WIDTH_SEL-1 : 0]       mux_sel_1[PORT_NUB_TOTAL-1 : 0];
+    wire    [WIDTH_SEL-1 : 0]       mux_ctrl_cnt_in;
 
 
     mux_ctrl_1 mux_ctrl_1
@@ -166,8 +201,11 @@ generate
         .rd_sel(mux_ctrl_rd_sel),
         .mux_sel(mux_ctrl_mux_sel),
         .full_in(mux_ctrl_full_in),
+        .cnt_in(mux_ctrl_cnt_in),
         .empty_in(voq0_empty)
     );
+
+    assign mux_ctrl_cnt_in = shift_select+2;
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop6
         assign voq0_rd_sel[i] = mux_ctrl_rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
