@@ -81,7 +81,8 @@ reg grant_result_vld;
 reg [PRI_NUM_BIT - 1:0]test;
 reg wait_data_first;
 reg data_is_break;
-reg data_is_break_recovery;
+reg data_is_break_recovery_1;
+reg data_is_break_recovery_2;
 crc16_32bit crc32 (
         .data_in(rd_data), 
         .crc_en(crc_en), 
@@ -124,7 +125,8 @@ always @(posedge clk or posedge rst_n) begin
         error <= 0;
         out_priority_bits <= 0;
         wait_data_first <= 0;
-        data_is_break_recovery <= 0;
+        data_is_break_recovery_1 <= 0;
+        data_is_break_recovery_2 <= 0;
         for (j = 0; j < PORT_NUB_TOTAL; j = j + 1) begin
             out_frame_num[j] <= 0;
             out_empty[j] <= 1;
@@ -193,8 +195,8 @@ always @(posedge clk or posedge rst_n) begin
                     rd_sop_reg <= 1;
                     rd_en_reg <= 1;
                 end
-                if(grant_result_vld == 1 && ready == 1 && is_first == 0 && rd_sop_reg == 0 && out_frame_num[grant_result] >= 1) begin
-                    if(data_is_break == 0 && data_is_break_recovery == 0) begin//数据中断与恢复判断，因为交换结构的问题，如有16个端口就得等16个周期才会有一个对应输入端口的数据包，这个地方用于恢复输出
+                if(is_first != 1 && grant_result_vld == 1 && ready == 1 && is_first == 0 && rd_sop_reg == 0 && out_frame_num[grant_result] >= 1) begin
+                    if(data_is_break == 0 && data_is_break_recovery_1 == 0 && data_is_break_recovery_2 == 0 && data_is_break_recovery_2 == 0) begin//数据中断与恢复判断，因为交换结构的问题，如有16个端口就得等16个周期才会有一个对应输入端口的数据包，这个地方用于恢复输出
                         //没有发生中断的情况
                         crc_en <= 1;
                         rd_data <= data_in;
@@ -202,10 +204,16 @@ always @(posedge clk or posedge rst_n) begin
                         rd_en_reg <= 1;
                         out_frame_num[grant_result] <= out_frame_num[grant_result] - 1;
                     end
-                    if(data_is_break_recovery == 1) begin//等empty再次拉低在清除恢复数据传输
+                    if(data_is_break_recovery_1 == 1 && empty[grant_result] == 0) begin//等empty再次拉低在清除恢复数据传输
                         rd_en_reg <= 1;
-                        data_is_break_recovery <= 0;
+                        data_is_break_recovery_1 <= 0;
+                        data_is_break_recovery_2 <= 1;
                     end
+                    
+                    if(data_is_break_recovery_2 == 1) begin
+                    data_is_break_recovery_2 <= 0;
+                    end
+                    
                     if (empty[grant_result] == 1 && out_frame_num[grant_result] > 1) begin //数据未能及时传输 判断数据中断是否发生的逻辑
                         data_is_break <= 1;//数据发生中断传输最后一个数据包在拉起，因为读的速度比输出的速度快2个时钟
                     end 
@@ -215,8 +223,10 @@ always @(posedge clk or posedge rst_n) begin
                         rd_data <= 0;
                         crc_en <= 0;
                         rd_vld <= 0;
-                        data_is_break_recovery <= 1;//等待数据恢复
+                        data_is_break_recovery_1 <= 1;//等待数据恢复
                     end
+                end else begin
+                    //rd_en_reg <= 0;
                 end
                 
                 if (out_frame_num[grant_result] == 0 && arb_en == 0) begin//输出块数为0时，停止输出
