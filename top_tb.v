@@ -157,20 +157,25 @@ endtask
 
 initial 
 begin
-    init();
+        init();
     #(15*CLK_TIME)
     send(0,1,1,10);
-    send(1,2,1,15);
-    send(2,1,2,20);
+    send(1,2,1,10);
+    send(2,1,1,10);
+    send(3,1,1,13);
+    send(4,1,2,14);
+    send(5,1,2,15);
+    //send(6,1,2,34);
+    //send(7,1,2,35);
     //top_ready[0] = 1; 
     top_ready[1] = 1; 
     top_ready[2] = 1; 
     //top_ready[3] = 1; 
     #(50*CLK_TIME)
     #(15*CLK_TIME)
-    send(0,1,1,10);
+    //send(0,1,1,10);
     send(1,2,1,15);
-    send(2,1,2,20);
+    //send(2,1,2,20);
     send(3,2,2,30);
     //top_ready[0] = 1; 
     top_ready[1] = 1; 
