@@ -159,8 +159,14 @@ initial
 begin
     init();
     #(15*CLK_TIME)
-    send(0,2,1,10);
+    send(0,1,1,10);
+    send(1,2,1,15);
+    send(2,1,2,20);
+    send(3,2,2,30);
+    top_ready[0] = 1; 
+    top_ready[1] = 1; 
     top_ready[2] = 1; 
+    top_ready[3] = 1; 
     #(50*CLK_TIME)
     $stop();
 end

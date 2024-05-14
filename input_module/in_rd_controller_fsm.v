@@ -7,6 +7,7 @@ module in_rd_controller_fsm
     input   wire                        start,
     input   wire    [WIDTH_SEL-1 : 0]   rx_in,
     input   wire    [WIDTH_LENGTH-1:0]  data_length,
+    input   wire                        ready_in,                
 
     output  wire    [WIDTH_SEL-1 : 0]   rx_out,
     output  wire                        fifo_rd_en,
@@ -19,10 +20,11 @@ localparam  DATA_WIDTH      =   `DATA_WIDTH;
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_LENGTH    =   $clog2(`DATA_LENGTH_MAX);
 
-localparam  IDLE    = 2'b00;
-localparam  LOAD    = 2'b10;
-localparam  RD      = 2'b01;
-localparam  DONE    = 2'b11;
+localparam  IDLE    = 3'b000;
+localparam  WAIT    = 3'b001;
+localparam  LOAD    = 3'b011;
+localparam  RD      = 3'b010;
+localparam  DONE    = 3'b111;
 
 reg [WIDTH_LENGTH-1 : 0]    data_length_reg;
 wire                        cnt_eq_length;
@@ -69,7 +71,7 @@ end
 assign rx_out = rx_reg;
 
 reg         data_length_reg_load,cnt_add,cnt_rst,rx_load,out_sel;
-reg [1:0]   state,state_n;
+reg [2:0]   state,state_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -90,11 +92,15 @@ always @(*)begin
     case(state)
         IDLE:begin
             if(start)begin
-                state_n = LOAD;
+                state_n = WAIT;
                 rx_load = 1'b1;
                 ready = 1'b1;
                 data_length_reg_load = 1'b1;
             end
+        end
+        WAIT:begin
+            if(ready_in)
+                state_n = LOAD;
         end
         LOAD:begin
             out_valid = 1'b1;

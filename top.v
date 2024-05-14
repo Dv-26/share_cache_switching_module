@@ -37,24 +37,32 @@ localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT;
 localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
 
-wire    [WIDTH_TOTAL-1 : 0]                 port_in;
+wire    [WIDTH_SEL_TOTAL-1 : 0]             rx_in;
+wire    [WIDTH_SEL_TOTAL-1 : 0]             tx_in;
+wire    [PORT_NUB_TOTAL-1 : 0]              vld_in;
+wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_in;
 wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out;
 wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel;
 wire    [PORT_NUB_TOTAL-1 : 0]              rd_en;
 wire    [PORT_NUB_TOTAL**2-1 : 0]           empty;
 wire                                        full;
+wire    [PORT_NUB_TOTAL-1 : 0]              ready_out;
 
 
 switch_moudle switch_moudle
 (
     .clk(clk),
     .rst_n(rst_n),
+    .rx_in(rx_in),
+    .tx_in(tx_in),
+    .vld_in(vld_in),
     .port_in(port_in),
     .port_out(port_out),
     .rd_sel(rd_sel),
     .rd_en(rd_en),
     .empty(empty),
     .full(full),
+    .ready(ready_out),
     .alm_ost_full(alm_ost_full)
 );
 
@@ -70,6 +78,7 @@ generate
         wire    [WIDTH_SEL-1 : 0]        in_tx;
         wire                             in_vld;
         wire    [DATA_WIDTH-1 : 0]       in_data;
+        wire                            in_ready;
         wire    [WIDTH_SIG_PORT - 1 : 0] in_local_port_info;
         wire    [DATA_WIDTH - 1 - 1 - 2 * WIDTH_SIG_PORT : 0] in_data_data;
         wire    [1 + WIDTH_SIG_PORT - 1 : 0] in_data_prefix;
@@ -88,6 +97,7 @@ generate
             .rx(in_rx),
             .tx(in_tx),
             .vld(in_vld),
+            .ready_in(in_ready),
             .data(in_data)
         );
 
@@ -97,7 +107,11 @@ generate
         assign in_wr_data                                   = wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
         assign in_data_data                                 = in_data[DATA_WIDTH - 1 : 1 + 2 * WIDTH_SIG_PORT];
         assign in_data_prefix                               = in_data[1 + WIDTH_SIG_PORT - 1 : 0];
-        assign port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT]   = {in_vld,in_rx,in_tx,in_data};
+        assign port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH]   = in_data;
+        assign rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]       = in_rx; 
+        assign tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]       = in_tx; 
+        assign vld_in[i]                                    = in_vld;
+        assign in_ready                                     = ready_out[i];
 
         wire                            out_rd_sop;
         wire                            out_rd_eop;

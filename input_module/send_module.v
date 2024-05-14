@@ -101,7 +101,7 @@ always @(*)begin
 end
 
 assign wr_data =    (state == CTRL)?    {dest,priority,length}:
-                    (state == SEND)?    {{(DATA_WIDTH-9){1'b0}}, cnt}:
+                    (state == SEND)?    cnt:
                                         {DATA_WIDTH{1'b0}};
 assign wr_vld = (state == CTRL) || (state == SEND);
 
