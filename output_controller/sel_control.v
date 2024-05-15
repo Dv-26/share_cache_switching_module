@@ -206,12 +206,13 @@ always @(posedge clk or posedge rst_n) begin
                     end
                     if(data_is_break_recovery_1 == 1 && empty[grant_result] == 0) begin//等empty再次拉低在清除恢复数据传输
                         rd_en_reg <= 1;
+                        rd_sel <= grant_result;
                         data_is_break_recovery_1 <= 0;
                         data_is_break_recovery_2 <= 1;
                     end
                     
                     if(data_is_break_recovery_2 == 1) begin
-                    data_is_break_recovery_2 <= 0;
+                        data_is_break_recovery_2 <= 0;
                     end
                     
                     if (empty[grant_result] == 1 && out_frame_num[grant_result] > 1) begin //数据未能及时传输 判断数据中断是否发生的逻辑
@@ -229,7 +230,7 @@ always @(posedge clk or posedge rst_n) begin
                     //rd_en_reg <= 0;
                 end
                 
-                if (out_frame_num[grant_result] == 0 && arb_en == 0) begin//输出块数为0时，停止输出
+                if (out_frame_num[grant_result] == 0 && arb_en == 0 && grant_result_vld == 1) begin//输出块数为0时，停止输出
                     // 发送数据完成，更新状态为等待数据
                     if(out_crc[grant_result] != crc_out && grant_result_vld == 1 && rd_vld == 0) begin//判断有没有错误
                         error <= 1;//拉高代表发生错误
