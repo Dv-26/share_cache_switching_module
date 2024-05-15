@@ -56,12 +56,17 @@ generate
         wire    [WIDTH_SEL-1 : 0]   tx;
         wire    [DATA_WIDTH-1 : 0]  data;
 
+        wire    [WIDTH_SEL-1 : 0]   port;
+
         assign vld = vld_in[i];
         assign rx = rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign tx = tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign data = port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
+        assign port = i;
 
-        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {vld,rx,tx,data};
+        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = (vld == 1)? {1'b1,rx,tx,data}:{1'b1,port,port,{DATA_WIDTH{1'b0}}}; 
+        //为了数据不乱序，就要保证数据是不间断连续输入，这里把非有效的信号当成发送和接收都是自身的数据
+
     end
 
 endgenerate
@@ -205,7 +210,7 @@ generate
         .empty_in(voq0_empty)
     );
 
-    assign mux_ctrl_cnt_in = shift_select+2;
+    assign mux_ctrl_cnt_in = shift_select;
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop6
         assign voq0_rd_sel[i] = mux_ctrl_rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
@@ -255,7 +260,7 @@ generate
         assign mux_out = mux[mux_sel_1[i]];  
         assign voq_wr_data = mux_out[WIDTH_VOQ1-1 : 0];
         assign voq_wr_sel = mux_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
-        assign voq_wr_en = mux_ctrl_wr_out[i];
+        assign voq_wr_en = (voq_wr_sel == i)? 1'b0:mux_ctrl_wr_out[i];//发送和接收一样的数据不写入;
         assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
         assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign voq_rd_en = rd_en[i];
