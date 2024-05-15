@@ -137,6 +137,7 @@ generate
             .rd_sel(out_rd_sel),
             .empty(out_empty),
             .data_in(out_data),
+            .qos_controll(out_qos_controll),
             .error(out_error)
         );
 
