@@ -30,6 +30,7 @@ module sel_control
     input [DATA_WIDTH - 1:0] data_in,
     input ready,
     input [PORT_NUB_TOTAL - 1:0] empty,
+    input qos_controll,
     output reg [DATA_WIDTH - 1:0] rd_data,
     output wire rd_sop,
     output reg rd_eop,
@@ -96,7 +97,7 @@ priority_control_module priority_control(
     .rst_n(~rst_n), // 复位信号
     .request_signals(~out_empty), // 请求信号数组
     .priorities(out_priority_bits), // 请求信号的优先级数组
-    .select_scheme(select_scheme), // 优先级选择方案（0：固定优先级；1：加权轮询）
+    .select_scheme(qos_controll), // 优先级选择方案（0：固定优先级；1：加权轮询）
     .grant(grant), // 输出的授权信号
     .grant_vld(grant_vld), // 输出授权信号的有效标志
     .arb_en(arb_en)
