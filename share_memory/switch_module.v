@@ -19,7 +19,7 @@ module switch_moudle
     output      wire                                        full,
     output      wire                                        alm_ost_full
 );
-
+reg     [WIDTH_SEL-1 : 0]               shift_select;
 localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
 localparam  DATA_WIDTH  =   `DATA_WIDTH;
 
@@ -43,7 +43,6 @@ ready_generate ready_generate
 
 wire    [WIDTH_TOTAL-1 : 0]             shift_in;
 wire    [WIDTH_TOTAL-1 : 0]             shift_out;
-reg     [WIDTH_SEL-1 : 0]               shift_select;
 
 genvar i,j;
 
@@ -65,7 +64,7 @@ generate
         assign port = i;
 
         assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = (vld == 1)? {1'b1,rx,tx,data}:{1'b1,port,port,{DATA_WIDTH{1'b0}}}; 
-        //为了数据不乱序，就要保证数据是不间断连续输入，这里把非有效的信号当成发送和接收都是自身的数据
+        //为了数据不乱序，就要保证数据是不间断连续输入，这里把非有效的信号当成发�?�和接收都是自身的数�?
 
     end
 
@@ -253,14 +252,14 @@ generate
             .rd_data(voq_rd_data),
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
-            .full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，所以满信号要提前 防止丢数据
+            .full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，�?以满信号要提�? 防止丢数�?
             .empty(voq_empty)
         );
 
         assign mux_out = mux[mux_sel_1[i]];  
         assign voq_wr_data = mux_out[WIDTH_VOQ1-1 : 0];
         assign voq_wr_sel = mux_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
-        assign voq_wr_en = (voq_wr_sel == i)? 1'b0:mux_ctrl_wr_out[i];//发送和接收一样的数据不写入;
+        assign voq_wr_en = (voq_wr_sel == i)? 1'b0:mux_ctrl_wr_out[i];//发�?�和接收�?样的数据不写�?;
         assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
         assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign voq_rd_en = rd_en[i];
