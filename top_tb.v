@@ -157,31 +157,42 @@ endtask
 
 initial 
 begin
-        init();
+    init();
     #(15*CLK_TIME)
-    send(0,1,1,10);
-    send(1,2,1,10);
-    send(2,1,1,10);
-    send(3,1,1,13);
-    send(4,1,2,14);
-    send(5,1,2,15);
+    send(0,1,1,23);
+    send(1,2,1,16);
+    send(2,1,1,17);
+    send(3,1,1,18);
+    send(4,1,2,19);
+    send(5,1,2,20);
+    send(6,1,2,21);
+    send(7,1,2,22);
+    //send(8,1,2,24);
+    //send(9,1,2,25);
+    //send(10,1,2,26);
+    //send(11,1,2,27);
+    //send(12,1,2,28);
+    //send(13,1,2,29);
+    //send(14,1,2,30);
+    //send(15,1,2,31);
     //send(6,1,2,34);
     //send(7,1,2,35);
     //top_ready[0] = 1; 
-    top_ready[1] = 1; 
+    
     top_ready[2] = 1; 
     //top_ready[3] = 1; 
-    #(50*CLK_TIME)
+    #(250*CLK_TIME)
+    
     #(15*CLK_TIME)
     //send(0,1,1,10);
-    send(1,2,1,15);
+    //send(1,2,1,15);
     //send(2,1,2,20);
-    send(3,2,2,30);
+    //send(3,2,2,30);
     //top_ready[0] = 1; 
     top_ready[1] = 1; 
     top_ready[2] = 1; 
     //top_ready[3] = 1; 
-    #(50*CLK_TIME)
+    #(5000*CLK_TIME)
     $stop();
 end
 
