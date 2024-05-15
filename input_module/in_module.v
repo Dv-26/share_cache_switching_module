@@ -27,7 +27,7 @@ localparam  WIDTH_HAND      =   16+WIDTH_LENGTH+WIDTH_PRIORITY+WIDTH_SEL;
 localparam  DATA_WIDTH      =   `DATA_WIDTH;
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 
-
+wire            wr_en;
 wire    [15 : 0]    crc_out;
 wire                crc_rst_n;
 
@@ -66,7 +66,6 @@ wire    [DATA_WIDTH-1 : 0]  ctrl_data_reg;
 wire            error;
 wire            wr_done;
 wire            wr_control_ready;
-wire            wr_en;
 
 
 in_wr_controller_fsm wr_controller

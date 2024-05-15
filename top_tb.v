@@ -159,14 +159,14 @@ initial
 begin
     init();
     #(15*CLK_TIME)
-    send(0,1,1,23);
+    send(0,2,1,23);
     send(1,2,1,16);
     send(2,1,1,17);
-    send(3,1,1,18);
-    send(4,1,2,19);
-    send(5,1,2,20);
-    send(6,1,2,21);
-    send(7,1,2,22);
+    send(3,2,1,18);
+    send(4,2,2,19);
+    send(5,2,2,20);
+    send(6,2,2,21);
+    send(7,2,2,22);
     //send(8,1,2,24);
     //send(9,1,2,25);
     //send(10,1,2,26);
@@ -179,7 +179,7 @@ begin
     //send(7,1,2,35);
     //top_ready[0] = 1; 
     
-    top_ready[2] = 1; 
+    //top_ready[2] = 1; 
     //top_ready[3] = 1; 
     #(250*CLK_TIME)
     
