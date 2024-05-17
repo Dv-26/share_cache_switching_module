@@ -35,7 +35,7 @@ end
 
 always@(*)begin
     count_n = count;
-    case(wr,rd)
+    case({wr,rd})
         2'b01:  count_n = count - 1;
         2'b10:  count_n = count + 1;
     endcase
