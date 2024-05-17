@@ -31,15 +31,15 @@ localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT;
 localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
 
-ready_generate ready_generate
-(
-    .clk(clk),
-    .rst_n(rst_n),
-    .cnt_in(shift_select),
-    .vld_in(vld_in), 
-    .rx_in(rx_in),
-    .ready_out(ready)
-);
+// ready_generate ready_generate
+// (
+//     .clk(clk),
+//     .rst_n(rst_n),
+//     .cnt_in(shift_select),
+//     .vld_in(vld_in), 
+//     .rx_in(rx_in),
+//     .ready_out(ready)
+// );
 
 wire    [WIDTH_TOTAL-1 : 0]             shift_in;
 wire    [WIDTH_TOTAL-1 : 0]             shift_out;
@@ -63,9 +63,8 @@ generate
         assign data = port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
         assign port = i;
 
-        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = (vld == 1)? {1'b1,rx,tx,data}:{1'b1,port,port,{DATA_WIDTH{1'b0}}}; 
-        //为了数据不乱序，就要保证数据是不间断连续输入，这里把非有效的信号当成发�?�和接收都是自身的数�?
-
+        // assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = (vld == 1)? {1'b1,rx,tx,data}:{1'b1,port,port,{DATA_WIDTH{1'b0}}}; 
+        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = {vld,rx,tx,data}; 
     end
 
 endgenerate

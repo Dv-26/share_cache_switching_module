@@ -92,16 +92,16 @@ always @(*)begin
     case(state)
         IDLE:begin
             if(start)begin
-                state_n = WAIT;
+                state_n = LOAD;
                 rx_load = 1'b1;
                 ready = 1'b1;
                 data_length_reg_load = 1'b1;
             end
         end
-        WAIT:begin
-            if(ready_in)
-                state_n = LOAD;
-        end
+        // WAIT:begin
+        //     if(ready_in)
+        //         state_n = LOAD;
+        // end
         LOAD:begin
             out_valid = 1'b1;
             out_sel = 1'b1;
