@@ -19,9 +19,13 @@ localparam  WIDTH_PORT_OUT = `DATA_WIDTH;
 localparam  WIDTH_TOTAL_OUT =   PORT_NUB * WIDTH_PORT_OUT; 
 
 localparam  WIDTH_SEL   =   $clog2(PORT_NUB);
+localparam  WIDTH_SEL_TOTAL = WIDTH_SEL * PORT_NUB;
 
 reg                                     clk,rst_n;
-wire    [WIDTH_TOTAL_IN-1:0]            port_in;
+wire    [WIDTH_SEL_TOTAL-1 : 0]         rx_in;
+wire    [WIDTH_SEL_TOTAL-1 : 0]         tx_in;
+wire    [PORT_NUB-1 : 0]                vld_in;
+wire    [WIDTH_TOTAL_OUT-1:0]           port_in;
 wire    [WIDTH_TOTAL_OUT-1:0]           port_out;
 wire    [WIDTH_SEL*PORT_NUB-1 : 0]      rd_sel_total;
 reg     [PORT_NUB-1 : 0]                rd_en;
@@ -62,7 +66,10 @@ generate
         );
 
         assign data_out[i] = port_out[(i+1)*WIDTH_PORT_OUT-1 : i*WIDTH_PORT_OUT];
-        assign port_in[(i+1)*WIDTH_PORT_IN-1 : i*WIDTH_PORT_IN] = {port_vaild_in[i],rx_port_in[i],tx_port_in[i],data_in[i]};
+        assign port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH] = data_in[i];
+        assign rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = rx_port_in[i];
+        assign tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = tx_port_in[i];
+        assign vld_in[i] = port_vaild_in[i];
         assign rd_sel_total[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = rd_sel[i];
         // assign rd_sel[i] = rd_sel_total[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign empty_out[i] = empty[(i+1)*PORT_NUB-1 : i*PORT_NUB];
@@ -74,6 +81,9 @@ switch_moudle switch_moudle
 (
     .clk(clk),
     .rst_n(rst_n),
+    .rx_in(rx_in),
+    .tx_in(tx_in),
+    .vld_in(vld_in),
     .port_in(port_in),
     .port_out(port_out),
     .rd_sel(rd_sel_total),

@@ -69,7 +69,7 @@ generate
 
         always @(posedge clk or negedge rst_n)begin
             if(!rst_n)
-                cnt_reg[i] <= i + 1;
+                cnt_reg[i] <= i + 2;
             else begin
                 if(cnt_load)
                     cnt_reg[i] <= cnt_f;

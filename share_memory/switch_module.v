@@ -6,270 +6,211 @@ module switch_moudle
     input       wire                                        clk,
     input       wire                                        rst_n,
 
-    input       wire    [PORT_NUB_TOTAL-1 : 0]              vld_in,
+    input       wire    [PORT_NUB-1 : 0]                    vld_in,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rx_in,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             tx_in,
-    input       wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_in,
-    output      wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out,
+    input       wire    [WIDTH_PORT_TOTAL-1 : 0]            port_in,
+    output      wire    [WIDTH_PORT_TOTAL-1 : 0]            port_out,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel,
-    input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
-    output      wire    [PORT_NUB_TOTAL-1 : 0]              ready,
+    input       wire    [PORT_NUB-1 : 0]                    rd_en,
+    output      wire    [PORT_NUB-1 : 0]                    ready,
 
-    output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty,
+    output      wire    [PORT_NUB**2-1 : 0]                 empty,
     output      wire                                        full,
     output      wire                                        alm_ost_full
 );
-reg     [WIDTH_SEL-1 : 0]               shift_select;
-localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
-localparam  DATA_WIDTH  =   `DATA_WIDTH;
 
-localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_FILTER =  2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_VOQ0  =   $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_VOQ1  =   `DATA_WIDTH;
-localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT; 
-localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
-localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
+localparam  PORT_NUB = `PORT_NUB_TOTAL;
+localparam  WIDTH_SEL = $clog2(PORT_NUB);
+localparam  WIDTH_SEL_TOTAL = WIDTH_SEL * PORT_NUB;
+localparam  WIDTH_PORT = `DATA_WIDTH;
+localparam  WIDTH_PORT_TOTAL = WIDTH_PORT * PORT_NUB;
+localparam  WIDTH_BARREL = 1 + 2*WIDTH_SEL + WIDTH_PORT;
+localparam  WIDTH_BARREL_TOTAL = PORT_NUB * WIDTH_BARREL;
+localparam  WIDTH_VOQ = WIDTH_SEL + WIDTH_PORT;
+localparam  WIDTH_MUX = 1 + WIDTH_SEL + WIDTH_PORT;
 
-ready_generate ready_generate
-(
-    .clk(clk),
-    .rst_n(rst_n),
-    .cnt_in(shift_select),
-    .vld_in(vld_in), 
-    .rx_in(rx_in),
-    .ready_out(ready)
-);
+reg     [WIDTH_SEL-1 : 0]   cnt;
 
-wire    [WIDTH_TOTAL-1 : 0]             shift_in;
-wire    [WIDTH_TOTAL-1 : 0]             shift_out;
+always @(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        cnt <= 0;
+    else
+        cnt <= cnt + 1;
+end
 
-genvar i,j;
-
-generate
-
-    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: shift_in_layout
-
-        wire                        vld;
-        wire    [WIDTH_SEL-1 : 0]   rx;
-        wire    [WIDTH_SEL-1 : 0]   tx;
-        wire    [DATA_WIDTH-1 : 0]  data;
-
-        wire    [WIDTH_SEL-1 : 0]   port;
-
-        assign vld = vld_in[i];
-        assign rx = rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-        assign tx = tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-        assign data = port_in[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
-        assign port = i;
-
-        assign shift_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = (vld == 1)? {1'b1,rx,tx,data}:{1'b1,port,port,{DATA_WIDTH{1'b0}}}; 
-        //为了数据不乱序，就要保证数据是不间断连续输入，这里把非有效的信号当成发�?�和接收都是自身的数�?
-
-    end
-
-endgenerate
+wire    [WIDTH_BARREL_TOTAL-1 : 0]  shift_in;
+wire    [WIDTH_BARREL_TOTAL-1 : 0]  shift_out;
 
 barrel_shift barrel_shift
 (
     .clk(clk),
     .rst_n(rst_n),
-    .select(shift_select),
+    .select(cnt),
     .port_in(shift_in), 
     .port_out(shift_out)
 );
 
-always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)
-        shift_select <= {WIDTH_SEL{1'b0}};
-    else
-        shift_select <= shift_select + 1;
-end
-
-wire    [WIDTH_FILTER-1 : 0]    filter_data[PORT_NUB_TOTAL-1 : 0][PORT_NUB_TOTAL-1 : 0];
-wire    [PORT_NUB_TOTAL**2-1 : 0]  filter_vaild;
+wire    [WIDTH_MUX-1: 0]        mux[PORT_NUB-1 : 0][PORT_NUB-1 : 0];
+wire    [PORT_NUB**2-1 : 0]     fifo_full;
+wire    [PORT_NUB**2-1 : 0]     voq_empty;
 
 generate
+    genvar i,j;
+    for(i=0; i<PORT_NUB; i=i+1)begin: loop1
 
+        wire                        shift_vld_in;
+        wire    [WIDTH_SEL-1 : 0]   shift_rx_in;
+        wire    [WIDTH_SEL-1 : 0]   shift_tx_in;
+        wire    [WIDTH_PORT-1 : 0]  shift_data_in;
 
-    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop1
+        assign  shift_vld_in    = vld_in[i];
+        assign  shift_rx_in     = rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign  shift_tx_in     = tx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign  shift_data_in   = port_in[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT];
 
-        wire    [WIDTH_FILTER*PORT_NUB_TOTAL-1 : 0]         filter_out;
-        wire    [PORT_NUB_TOTAL-1 : 0]      vaild;
+        assign  shift_in[(i+1)*WIDTH_BARREL-1 : i*WIDTH_BARREL] = {shift_vld_in, shift_rx_in, shift_tx_in, shift_data_in};
 
-        filter#(.dest(i))filter
-        (
-            .clk(clk),
-            .rst_n(rst_n),
-            .port_in(shift_out), 
-            .port_out(filter_out),
-            .port_vaild(vaild)
-        );
-
-        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin: loop2
-            assign  filter_data[i][j] = filter_out[(j+1)*WIDTH_FILTER-1 : j*WIDTH_FILTER] ;
-        end
-        assign  filter_vaild[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = vaild;
-
+        
     end
 
-    wire    [PORT_NUB_TOTAL-1 : 0]  voq0_wr_en;
-    wire    [WIDTH_SEL_TOTAL-1 : 0] mux0_ctrl_mux_sel;
-    wire    [PORT_NUB_TOTAL-1 : 0]  mux0_ctrl_full_in;
+    wire    [WIDTH_SEL_TOTAL-1 : 0]     demux_ctrl_rd_sel;
+    wire    [WIDTH_SEL_TOTAL-1 : 0]     demux_ctrl_rd_sel_f;
+    wire    [WIDTH_SEL_TOTAL-1 : 0]     demux_ctrl_rx_in;
+    wire    [PORT_NUB-1 : 0]            demux_ctrl_rd_en_out;
 
-    mux_ctrl_0 mux_ctrl_0
+    demux_ctrol demux_ctrol
     (
         .clk(clk),
         .rst_n(rst_n),
-        .port_vaild(filter_vaild),
-        .wr_en_out(voq0_wr_en),
-        .mux_sel(mux0_ctrl_mux_sel)
+        .cnt_in(cnt),
+        .rx_in(demux_ctrl_rx_in),
+        .fifo_full(fifo_full),
+        .voq_empty(voq_empty),
+        .voq_rd_sel(demux_ctrl_rd_sel),
+        .voq_rd_sel_f(demux_ctrl_rd_sel_f),
+        .voq_rd_en(demux_ctrl_rd_en_out)
     );
 
-    wire    [WIDTH_VOQ0-1 : 0]  voq0_out[PORT_NUB_TOTAL-1 : 0];
-    wire    [WIDTH_SEL-1 : 0]   voq0_rd_sel[PORT_NUB_TOTAL-1 : 0];
-    wire    [PORT_NUB_TOTAL-1 : 0]    voq0_rd_en;
-    wire    [PORT_NUB_TOTAL-1 : 0]    voq0_alm_ost_full;
-    wire    [PORT_NUB_TOTAL**2-1 : 0]   voq0_empty;
+    for(i=0; i<PORT_NUB; i=i+1)begin :loop5
 
-    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop3
+        wire                        shift_vld_out;
+        wire    [WIDTH_SEL-1 : 0]   shift_rx_out;
+        wire    [WIDTH_SEL-1 : 0]   shift_tx_out;
+        wire    [WIDTH_PORT-1 : 0]  shift_data_out;
 
-        wire    [WIDTH_FILTER-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
-        wire    [WIDTH_FILTER-1 : 0]  mux_out;
-        wire    [WIDTH_SEL-1 : 0]   mux_sel;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_wr_data;
-        wire    [WIDTH_SEL-1 : 0]   voq_wr_sel;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_rd_data;
-        wire                        voq_rd_en;
+        assign {shift_vld_out,shift_rx_out,shift_tx_out,shift_data_out} = shift_out[(i+1)*WIDTH_BARREL-1 : i*WIDTH_BARREL];
+
+        wire    [WIDTH_VOQ-1 : 0]   voq_data_in;
+        wire    [WIDTH_VOQ-1 : 0]   voq_out;
+        wire    [WIDTH_PORT-1 : 0]  voq_data_out;
+        wire    [WIDTH_SEL-1 : 0]   voq_rx_out;
         wire    [WIDTH_SEL-1 : 0]   voq_rd_sel;
-        wire                         voq_wr_en;
-        wire                          voq_full;  
-        wire                          voq_alm_ost_full;  
-        wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
-
-
-        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin: loop4
-            assign mux[j] = filter_data[j][i];
-        end
+        wire    [WIDTH_SEL-1 : 0]   voq_rd_sel_f;
+        wire                        voq_rd_vld;
+        wire                        voq_full;
+        wire    [PORT_NUB-1 : 0]    voq_empty_out;
 
         voq
         #(
             .NAME(i),
             .DEPTH(`DEPTH),
-            .DATA_WIDTH(WIDTH_VOQ0),
-            .THRESHOLD(`DEPTH >> 3)
+            .THRESHOLD(200),
+            .DATA_WIDTH(WIDTH_VOQ)
         )
-        voq_0
+        voq
         (
             .clk(clk),
             .rst_n(rst_n),
-            .wr_data(voq_wr_data),
-            .wr_vaild(voq_wr_en),
-            .wr_sel(voq_wr_sel),
-            .rd_data(voq_rd_data),
-            .rd_vaild(voq_rd_en),
+            .wr_data(voq_data_in),
+            .wr_vaild(shift_vld_out),
+            .wr_sel(shift_tx_out),
+            .rd_data(voq_out),
+            .rd_vaild(voq_rd_vld),
             .rd_sel(voq_rd_sel),
             .full(voq_full),
-            .empty(voq_empty),
-            .alm_ost_full(voq_alm_ost_full)
+            .empty(voq_empty_out)
         );
 
-        assign  mux_sel     = mux0_ctrl_mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-        assign  voq_rd_en   = voq0_rd_en[i];
-        assign  voq_rd_sel  = voq0_rd_sel[i];
-        assign  voq0_out[i] = voq_rd_data ;    
-        assign  mux_out     = mux[mux_sel];
-        assign  voq_wr_data = mux_out[WIDTH_VOQ0-1 : 0];
-        assign  voq_wr_en   = voq0_wr_en[i];
-        assign  voq_wr_sel  = mux_out[WIDTH_FILTER-1 : WIDTH_FILTER-WIDTH_SEL];
-        assign  voq0_empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = voq_empty; 
-        assign  mux0_ctrl_full_in[i] = voq_full;
-        assign  voq0_alm_ost_full[i] = voq_alm_ost_full;
+        assign  voq_data_in = {shift_rx_out, shift_data_out};
+        assign  voq_empty[(i+1)*PORT_NUB-1 : i*PORT_NUB] = voq_empty_out;
+        assign  voq_rd_sel = demux_ctrl_rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign  voq_rd_sel_f = demux_ctrl_rd_sel_f[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+        assign  voq_rd_vld = demux_ctrl_rd_en_out[i];
+        assign  {voq_rx_out, voq_data_out} = voq_out;
+        assign  demux_ctrl_rx_in[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = voq_rx_out;
+
+        wire    [WIDTH_MUX-1 : 0]   demux_in;
+        wire    [(WIDTH_MUX*PORT_NUB)-1 : 0]    demux_out;
+        
+        demux
+        #(
+            .DATA_WIDTH(WIDTH_MUX),
+            .NUB(PORT_NUB)
+        )
+        demux
+        (
+            .port_in(demux_in),
+            .sel_in(voq_rx_out),
+            .port_out(demux_out)
+        );
+
+        assign demux_in = {voq_rd_vld, voq_rd_sel_f, voq_data_out};
+
+        for(j=0; j<PORT_NUB; j=j+1)begin: loop2
+            assign mux[i][j] = demux_out[(i+1)*WIDTH_MUX-1 : i*WIDTH_MUX];
+        end
+        
     end
 
-    wire [WIDTH_SEL_TOTAL-1 : 0]    mux_ctrl_mux_sel;
-    wire [WIDTH_SEL_TOTAL-1 : 0]    mux_ctrl_rd_sel;
-    wire    [PORT_NUB_TOTAL-1 : 0]  mux_ctrl_full_in;
-    wire    [PORT_NUB_TOTAL-1 : 0]  mux_ctrl_rd_out;
-    wire    [PORT_NUB_TOTAL-1 : 0]  mux_ctrl_wr_out;
-    wire    [WIDTH_SEL-1 : 0]       mux_sel_1[PORT_NUB_TOTAL-1 : 0];
-    wire    [WIDTH_SEL-1 : 0]       mux_ctrl_cnt_in;
+    for(i=0; i<PORT_NUB; i=i+1)begin: loop3
 
+        wire    [WIDTH_PORT_TOTAL-1 : 0]    mux_fifo_data_in;
+        wire    [PORT_NUB-1 : 0]            mux_fifo_wr_en;
+        wire    [WIDTH_SEL_TOTAL-1 : 0]     mux_fifo_tx;
+        wire    [WIDTH_PORT-1 : 0]          mux_fifo_data_out;
+        wire    [PORT_NUB-1 : 0]            mux_fifo_full;
+        wire    [PORT_NUB-1 : 0]            mux_fifo_empty;
+        wire    [WIDTH_SEL-1 : 0]           mux_rd_sel;
 
-    mux_ctrl_1 mux_ctrl_1
-    (
-        .clk(clk),
-        .rst_n(rst_n),
-        .rd_out(mux_ctrl_rd_out),
-        .wr_out(mux_ctrl_wr_out),
-        .rd_sel(mux_ctrl_rd_sel),
-        .mux_sel(mux_ctrl_mux_sel),
-        .full_in(mux_ctrl_full_in),
-        .cnt_in(mux_ctrl_cnt_in),
-        .empty_in(voq0_empty)
-    );
+        for(j=0; j<PORT_NUB; j=j+1)begin: loop4
 
-    assign mux_ctrl_cnt_in = shift_select;
+            wire    [WIDTH_PORT-1 : 0]  data;
+            wire                        wr_en;
+            wire    [WIDTH_SEL-1 : 0]   tx;
 
-    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop6
-        assign voq0_rd_sel[i] = mux_ctrl_rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-        assign voq0_rd_en[i] = mux_ctrl_rd_out[i];
-        assign mux_sel_1[i] = mux_ctrl_mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-    end
+            assign mux_fifo_data_in[(j+1)*WIDTH_PORT-1 : j*WIDTH_PORT] = data;
+            assign mux_fifo_wr_en[j] = wr_en;
+            assign mux_fifo_wr_tx = tx;
+            assign {wr_en, tx, data} = mux[j][i];
 
-
-    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop5
-
-        wire    [WIDTH_VOQ0-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
-        wire    [WIDTH_VOQ0-1 : 0]  mux_out;
-        wire    [WIDTH_VOQ1-1 : 0]  voq_wr_data;
-        wire    [WIDTH_SEL-1 : 0]   voq_wr_sel;
-        wire                        voq_wr_en;
-        wire    [WIDTH_VOQ1-1 : 0]  voq_rd_data;
-        wire    [WIDTH_SEL-1 : 0]   voq_rd_sel;
-        wire                        voq_rd_en;
-        wire                        voq_full;
-        wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
-
-        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
-            assign mux[j] = voq0_out[j];
         end
 
-        voq
-        #(
-            .NAME(PORT_NUB_TOTAL+i),
-            .DEPTH(`DEPTH),
-            .DATA_WIDTH(WIDTH_VOQ1),
-            .THRESHOLD(WIDTH_SEL-1)
-        )
-        voq_1
+        mux_fifo mux_fifo
         (
             .clk(clk),
             .rst_n(rst_n),
-            .wr_data(voq_wr_data),
-            .wr_vaild(voq_wr_en),
-            .wr_sel(voq_wr_sel),
-            .rd_data(voq_rd_data),
-            .rd_vaild(voq_rd_en),
-            .rd_sel(voq_rd_sel),
-            .full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，�?以满信号要提�? 防止丢数�?
-            .empty(voq_empty)
+            .wr_en(mux_fifo_wr_en),
+            .rd_en(rd_en),
+            .data_in(mux_fifo_data_in),
+            .port_in(mux_fifo_tx),
+            .sel(mux_rd_sel),
+            .data_out(mux_fifo_data_out),
+            .empty(mux_fifo_empty),
+            .full(mux_fifo_full)
         );
 
-        assign mux_out = mux[mux_sel_1[i]];  
-        assign voq_wr_data = mux_out[WIDTH_VOQ1-1 : 0];
-        assign voq_wr_sel = mux_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
-        assign voq_wr_en = (voq_wr_sel == i)? 1'b0:mux_ctrl_wr_out[i];//发�?�和接收�?样的数据不写�?;
-        assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
-        assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
-        assign voq_rd_en = rd_en[i];
-        assign mux_ctrl_full_in[i] = voq_full;
-        assign empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = voq_empty;
+        assign  empty[(i+1)*PORT_NUB-1 : i*PORT_NUB] = mux_fifo_empty;
+        assign  fifo_full[(i+1)*PORT_NUB-1 : i*PORT_NUB] = mux_fifo_full;  
+        assign  port_out[(i+1)*WIDTH_PORT-1 : i*WIDTH_PORT] = mux_fifo_data_out;
+        assign  mux_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
+
+        
     end
 
 endgenerate
 
-assign full = |mux0_ctrl_full_in;
-assign alm_ost_full = |voq0_alm_ost_full;
+
+
 
 endmodule
