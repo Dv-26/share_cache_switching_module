@@ -45,7 +45,7 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
-wire    [9:0]               data_length;
+wire    [WIDTH_LENGTH-1:0]               data_length;
 wire                        cnt_eq_length;
 
 always @(posedge clk or negedge rst_n)begin

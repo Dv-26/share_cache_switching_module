@@ -40,6 +40,7 @@ localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL;
 //     .rx_in(rx_in),
 //     .ready_out(ready)
 // );
+assign ready = (shift_select == PORT_NUB_TOTAL-1)? {PORT_NUB_TOTAL{1'b1}}:{PORT_NUB_TOTAL{1'b0}};
 
 wire    [WIDTH_TOTAL-1 : 0]             shift_in;
 wire    [WIDTH_TOTAL-1 : 0]             shift_out;
@@ -219,8 +220,39 @@ generate
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop5
 
-        wire    [WIDTH_VOQ0-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
-        wire    [WIDTH_VOQ0-1 : 0]  mux_out;
+        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
+        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux_out;
+        wire    [WIDTH_VOQ0-1 : 0]  voq_in_mouule_data_in;
+        wire    [WIDTH_VOQ0-1 : 0]  voq_in_mouule_data_out;
+        wire                        voq_in_module_full;
+        wire                        voq_in_module_wr_in;
+        wire                        voq_in_module_wr_out;
+        wire    [WIDTH_SEL-1 : 0]   voq_in_module_nub; 
+
+        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
+            assign mux[j] = {j,voq0_out[j]};
+        end
+
+        voq_in_module voq_in_module
+        (
+            .clk(clk),
+            .rst_n(rst_n),
+            .data_in(voq_in_mouule_data_in),
+            .voq_full(voq_full),
+            .nub(voq_in_module_nub),
+            .wr_en_in(voq_in_module_wr_in),
+            .wr_en_out(voq_in_module_wr_out),
+            .data_out(voq_in_mouule_data_out),
+            .full(voq_in_module_full)
+        );
+
+        assign mux_out = mux[mux_sel_1[i]];  
+        assign voq_in_module_nub = mux_out[WIDTH_SEL+WIDTH_VOQ0-1 : WIDTH_VOQ0]; 
+        assign voq_in_mouule_data_in = mux_out[WIDTH_VOQ0-1 : 0];
+        assign mux_ctrl_full_in[i] = voq_in_module_full;
+        assign voq_in_module_wr_in = mux_ctrl_wr_out[i];
+
+
         wire    [WIDTH_VOQ1-1 : 0]  voq_wr_data;
         wire    [WIDTH_SEL-1 : 0]   voq_wr_sel;
         wire                        voq_wr_en;
@@ -229,10 +261,6 @@ generate
         wire                        voq_rd_en;
         wire                        voq_full;
         wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
-
-        for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
-            assign mux[j] = voq0_out[j];
-        end
 
         voq
         #(
@@ -255,14 +283,13 @@ generate
             .empty(voq_empty)
         );
 
-        assign mux_out = mux[mux_sel_1[i]];  
-        assign voq_wr_data = mux_out[WIDTH_VOQ1-1 : 0];
-        assign voq_wr_sel = mux_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
-        assign voq_wr_en = (voq_wr_sel == i)? 1'b0:mux_ctrl_wr_out[i];//发�?�和接收�?样的数据不写�?;
+        assign voq_wr_data = voq_in_mouule_data_out[WIDTH_VOQ1-1 : 0];
+        assign voq_wr_sel = voq_in_mouule_data_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
+        assign voq_wr_en = voq_in_module_wr_out;
+
         assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
         assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign voq_rd_en = rd_en[i];
-        assign mux_ctrl_full_in[i] = voq_full;
         assign empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = voq_empty;
     end
 
