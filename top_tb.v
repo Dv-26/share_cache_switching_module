@@ -159,14 +159,14 @@ initial
 begin
     init();
     #(15*CLK_TIME)
-    send(0,2,1,16);
-    send(1,2,1,16);
+    send(0,3,1,16);
+    send(1,3,1,16);
     send(2,1,1,16);
-    send(3,2,1,16);
-    send(4,2,2,16);
-    send(5,2,2,24);
-    send(6,2,2,24);
-    send(7,2,2,24);
+    //send(3,3,1,16);
+    send(4,3,2,16);
+    send(5,3,2,24);
+    send(6,3,2,24);
+    send(7,3,2,24);
     //send(8,1,2,24);
     //send(9,1,2,25);
     //send(10,1,2,26);
@@ -190,7 +190,7 @@ begin
     //send(3,2,2,30);
     //top_ready[0] = 1; 
     top_ready[1] = 1; 
-    top_ready[2] = 1; 
+    top_ready[3] = 1; 
     //top_ready[3] = 1; 
     #(5000*CLK_TIME)
     $stop();

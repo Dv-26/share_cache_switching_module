@@ -28,7 +28,7 @@ localparam  WIDTH_PRIORITY  = $clog2(`PRIORITY);
 wire    [WIDTH_LENGTH-1 : 0]    length;
 wire    [WIDTH_SEL-1 : 0]       tx_in;
 wire    [WIDTH_SEL-1 : 0]       tx_out;
-
+wire                        cut_1to2_out;
 assign tx_in = data_in[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
 assign tx_out = fifo1_rd_data[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
 
@@ -74,7 +74,7 @@ generate
     wire    [WIDTH_FIFO-1 : 0]  fifo1_rd_data;
     wire                        fifo1_wr_en,fifo1_rd_en;
     wire                        fifo1_full,fifo1_empty;
-    wire                        cut_1to2_out;
+    
 
     reg_fifo
     #(

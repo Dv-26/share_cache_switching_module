@@ -232,7 +232,7 @@ generate
         for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
             assign mux[j] = {j,voq0_out[j]};
         end
-
+        wire                        voq_full;
         voq_in_module voq_in_module
         (
             .clk(clk),
@@ -259,7 +259,6 @@ generate
         wire    [WIDTH_VOQ1-1 : 0]  voq_rd_data;
         wire    [WIDTH_SEL-1 : 0]   voq_rd_sel;
         wire                        voq_rd_en;
-        wire                        voq_full;
         wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
 
         voq
