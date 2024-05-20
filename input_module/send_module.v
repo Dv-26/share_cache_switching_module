@@ -1,6 +1,9 @@
 `include "../generate_parameter.vh"
 
 module send_module
+#(
+    parameter tx_port = 0
+)
 (
     input   wire                            clk,
     input   wire                            rst_n,
@@ -30,15 +33,15 @@ localparam  SEND = 3'b010;
 localparam  DONE = 3'b100;
 
 
-reg [9:0]   cnt;
+reg [DATA_WIDTH-1:0]   cnt;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)begin
-        cnt <= 0;
+        cnt <= tx_port << 28;
     end
     else begin
         if(cnt_rst)begin
-            cnt <= 0;
+            cnt <= tx_port << 28;
         end
         else begin
             if(cnt_add)
@@ -47,7 +50,7 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
-reg [9:0]   data_length_reg;
+reg [WIDTH_LENGTH-1 : 0]   data_length_reg;
 wire        cnt_eq_length;
 
 always @(posedge clk or negedge rst_n)begin
@@ -58,7 +61,7 @@ always @(posedge clk or negedge rst_n)begin
             data_length_reg  <= length;
     end
 end
-assign cnt_eq_length = cnt == data_length_reg-1;
+assign cnt_eq_length = cnt[WIDTH_LENGTH-1 : 0] == data_length_reg-1;
 
 reg [2:0]   state,state_n;
 reg         data_length_reg_load,cnt_add,cnt_rst,out_sel;

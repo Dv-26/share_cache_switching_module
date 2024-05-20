@@ -88,7 +88,11 @@ generate
         wire                            wr_vld;
         wire    [DATA_WIDTH-1 : 0]      wr_data;
 
-        send_module send_module
+        send_module
+        #(
+            .tx_port(i)
+        )
+        send_module
         (
             .clk(clk),
             .rst_n(rst_n),
