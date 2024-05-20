@@ -22,33 +22,35 @@ module dc_fifo
 
 (*ram_style="block"*)reg     [DATA_BIT-1:0]      array_reg [DATA_DEPTH-1:0];
 
-reg     [DATA_DEPTH:0]      w_prt_reg;
-wire    [DATA_DEPTH:0]      w_prt_gray;
-reg     [DATA_DEPTH:0]      w_prt_gray_r,w_prt_gray_rr;    
-wire    [DATA_DEPTH:0]      w_prt_bin;
-reg     [DATA_DEPTH-1:0]    wr_cnt_reg;
+localparam     WIDTH_ADDR = $clog2(DATA_DEPTH);
 
-reg     [DATA_DEPTH:0]      r_prt_reg; 
-wire    [DATA_DEPTH:0]      r_prt_gray;
-reg     [DATA_DEPTH:0]      r_prt_gray_r,r_prt_gray_rr;    
-wire    [DATA_DEPTH:0]      r_prt_bin;
-reg     [DATA_DEPTH-1:0]    rd_cnt_reg;
+reg     [WIDTH_ADDR:0]      w_prt_reg;
+wire    [WIDTH_ADDR:0]      w_prt_gray;
+reg     [WIDTH_ADDR:0]      w_prt_gray_r,w_prt_gray_rr;    
+wire    [WIDTH_ADDR:0]      w_prt_bin;
+reg     [WIDTH_ADDR-1:0]      wr_cnt_reg;
+
+reg     [WIDTH_ADDR:0]      r_prt_reg; 
+wire    [WIDTH_ADDR:0]      r_prt_gray;
+reg     [WIDTH_ADDR:0]      r_prt_gray_r,r_prt_gray_rr;    
+wire    [WIDTH_ADDR:0]      r_prt_bin;
+reg     [WIDTH_ADDR-1:0]      rd_cnt_reg;
 
 always @(posedge wr_clk)begin
     if(wr_en && !full_out_n)
-        array_reg [w_prt_reg[DATA_DEPTH-1:0]] <= wr_data;
+        array_reg [w_prt_reg[WIDTH_ADDR-1:0]] <= wr_data;
 end
 
 
 
 
-assign  rd_data = array_reg[r_prt_reg[DATA_DEPTH-1:0]];
+assign  rd_data = array_reg[r_prt_reg[WIDTH_ADDR-1:0]];
 assign w_prt_gray = (w_prt_reg >> 1) ^ w_prt_reg;
 
 always @(posedge wr_clk or negedge rst_n)begin
     if(!rst_n)begin
-        r_prt_gray_r    <= {(DATA_DEPTH+1){1'b0}};
-        r_prt_gray_rr   <= {(DATA_DEPTH+1){1'b0}};
+        r_prt_gray_r    <= {(WIDTH_ADDR+1){1'b0}};
+        r_prt_gray_rr   <= {(WIDTH_ADDR+1){1'b0}};
     end
     else begin
         r_prt_gray_r    <= r_prt_gray;
@@ -58,8 +60,8 @@ end
 
 genvar i;
 generate
-    for(i=0;i<DATA_DEPTH+1;i=i+1)begin: r_gray2binary
-        if(i==DATA_DEPTH) 
+    for(i=0;i<WIDTH_ADDR+1;i=i+1)begin: r_gray2binary
+        if(i==WIDTH_ADDR) 
             assign r_prt_bin[i] = r_prt_gray_rr[i];
         else 
             assign r_prt_bin[i] = r_prt_bin[i+1] ^ r_prt_gray_rr[i];
@@ -68,9 +70,9 @@ endgenerate
 
 always @(posedge wr_clk or negedge rst_n)begin
     if(!rst_n)
-        wr_cnt_reg <= {DATA_DEPTH{1'b0}};
+        wr_cnt_reg <= {WIDTH_ADDR{1'b0}};
     else 
-        wr_cnt_reg <= w_prt_reg[DATA_DEPTH-1:0] - r_prt_bin[DATA_DEPTH-1:0];
+        wr_cnt_reg <= w_prt_reg[WIDTH_ADDR-1:0] - r_prt_bin[WIDTH_ADDR-1:0];
 end
 
 assign wr_cnt = wr_cnt_reg;
@@ -81,7 +83,7 @@ assign wr_cnt = wr_cnt_reg;
 reg     full_out;
 /* wire    full_out_n; */
 
-assign full_out_n = (w_prt_gray[DATA_DEPTH] != r_prt_gray_rr[DATA_DEPTH]) && (w_prt_gray[DATA_DEPTH - 1] != r_prt_gray_rr[DATA_DEPTH - 1]) && (w_prt_gray[DATA_DEPTH-2:0] == r_prt_gray_rr[DATA_DEPTH-2:0]);
+assign full_out_n = (w_prt_gray[WIDTH_ADDR] != r_prt_gray_rr[WIDTH_ADDR]) && (w_prt_gray[WIDTH_ADDR - 1] != r_prt_gray_rr[WIDTH_ADDR - 1]) && (w_prt_gray[WIDTH_ADDR-2:0] == r_prt_gray_rr[WIDTH_ADDR-2:0]);
 
 /* always @(posedge wr_clk or negedge rst_n)begin */
 /*     if(!rst_n) */
@@ -97,7 +99,7 @@ assign full = full_out_n;
 
 always @(posedge wr_clk or negedge rst_n)begin
     if(!rst_n)begin
-        w_prt_reg   <= {(DATA_DEPTH+1){1'b0}};
+        w_prt_reg   <= {(WIDTH_ADDR+1){1'b0}};
     end
     else begin 
         if(wr_en && ~full_out_n)
@@ -112,8 +114,8 @@ assign r_prt_gray = (r_prt_reg >> 1) ^ r_prt_reg;
 
 always @(posedge rd_clk or negedge rst_n)begin
     if(!rst_n)begin
-        w_prt_gray_r <= {(DATA_DEPTH + 1){1'b0}};
-        w_prt_gray_rr <= {(DATA_DEPTH + 1){1'b0}};
+        w_prt_gray_r <= {(WIDTH_ADDR + 1){1'b0}};
+        w_prt_gray_rr <= {(WIDTH_ADDR + 1){1'b0}};
     end
     else begin
         w_prt_gray_r <= w_prt_gray;
@@ -125,8 +127,8 @@ end
 
 genvar j;
 generate
-    for(j=0;j<DATA_DEPTH+1;j=j+1)begin: w_gray2binary
-        if(j==DATA_DEPTH) 
+    for(j=0;j<WIDTH_ADDR+1;j=j+1)begin: w_gray2binary
+        if(j==WIDTH_ADDR) 
             assign w_prt_bin[j] = w_prt_gray_rr[j];
         else 
             assign w_prt_bin[j] = w_prt_bin[j+1] ^ w_prt_gray_rr[j];
@@ -137,9 +139,9 @@ endgenerate
 
 always @(posedge rd_clk or negedge rst_n)begin
     if(!rst_n)
-        rd_cnt_reg <= {DATA_DEPTH{1'b0}};
+        rd_cnt_reg <= {WIDTH_ADDR{1'b0}};
     else 
-        rd_cnt_reg <= w_prt_bin[DATA_DEPTH-1:0] - r_prt_reg[DATA_DEPTH-1:0];
+        rd_cnt_reg <= w_prt_bin[WIDTH_ADDR-1:0] - r_prt_reg[WIDTH_ADDR-1:0];
 end
 
 assign rd_cnt = rd_cnt_reg;
@@ -165,7 +167,7 @@ assign empty = empty_out_n;
 
 always @(posedge rd_clk or negedge rst_n)begin
     if(!rst_n)begin
-        r_prt_reg   <= {(DATA_DEPTH+1){1'b0}};
+        r_prt_reg   <= {(WIDTH_ADDR+1){1'b0}};
     end
     else begin
         if(rd_en && ~empty_out_n)

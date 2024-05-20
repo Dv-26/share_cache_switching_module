@@ -103,7 +103,7 @@ always@(posedge tx_clk or negedge rst_n)begin
     else
         level_r2t_f <= level_r2t;
 end
-assign  pulse_r2t = !level_r2t_f & level_r2t;
+assign  pulse_r2t = level_r2t_f ^ level_r2t;
 
 
 assign tx_ready = pulse_r2t;

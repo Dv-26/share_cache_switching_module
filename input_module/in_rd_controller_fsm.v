@@ -55,7 +55,7 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
-assign cnt_eq_length = cnt == data_length_reg;
+assign cnt_eq_length = cnt == data_length_reg - 1;
 
 reg [WIDTH_SEL-1:0]   rx_reg;
 
@@ -112,7 +112,6 @@ always @(*)begin
             cnt_add = 1'b1;
             if(cnt_eq_length)begin
                 state_n = DONE;
-                out_valid = 1'b0;
             end
         end
         DONE:begin

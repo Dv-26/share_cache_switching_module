@@ -25,10 +25,13 @@ localparam  WIDTH_CRC       =`CRC32_LENGTH;
 localparam  WIDTH_PRIORITY  = $clog2(`PRIORITY);
 
 
+wire                            top_wr_en;
 wire    [WIDTH_LENGTH-1 : 0]    length;
 wire    [WIDTH_SEL-1 : 0]       tx_in;
 wire    [WIDTH_SEL-1 : 0]       tx_out;
 wire                        cut_1to2_out;
+
+assign top_wr_en = !full & wr_en_in;
 assign tx_in = data_in[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
 assign tx_out = fifo1_rd_data[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
 
@@ -59,7 +62,7 @@ generate
             .length_in(length),
             .tx_in(tx_in),
             .nub_in(nub),
-            .top_rd_en_in(wr_en_in),
+            .top_rd_en_in(top_wr_en),
             .valid_out(tx_manage_valid),
             .cut_1to2_out(cut_1to2)
         );
@@ -79,7 +82,7 @@ generate
     reg_fifo
     #(
         .DATA_WIDTH(WIDTH_FIFO),
-        .DEPTH(16)
+        .DEPTH(20)
     )
     fifo_1
     (
@@ -129,7 +132,7 @@ generate
 
         assign wr_data = data_in;
         assign fifo2_mux[i] = {empty, rd_data}; 
-        assign wr_en = (wr_en_in && tx_in == i)? !fifo1_wr_en:1'b0;
+        assign wr_en = (top_wr_en && tx_in == i)? !fifo1_wr_en:1'b0;
         assign rd_en = (tx_out == i)? fifo2_rd_en:1'b0;
 
     end

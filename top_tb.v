@@ -188,10 +188,10 @@ begin
     init();
     #(15*CLK_TIME)
     random_send();
-    for(times = 0; times<20; times=times+1)begin
+    for(times = 0; times<40; times=times+1)begin
         wait(|send_ready)
             random_send();
-            #(($random % 50)*CLK_TIME);
+            #((($random % 200) + 50)*CLK_TIME);
     end
     #(250*CLK_TIME)
     $stop();

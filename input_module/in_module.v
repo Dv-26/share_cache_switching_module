@@ -63,7 +63,6 @@ dc_fifo
 
 
 wire    [DATA_WIDTH-1 : 0]  ctrl_data_reg;
-wire            error;
 wire            wr_done;
 wire            wr_control_ready;
 

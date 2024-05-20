@@ -37,11 +37,11 @@ reg [DATA_WIDTH-1:0]   cnt;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)begin
-        cnt <= tx_port << 28;
+        cnt <= (tx_port << 28) + (dest << 24);
     end
     else begin
         if(cnt_rst)begin
-            cnt <= tx_port << 28;
+            cnt <= (tx_port << 28) + (dest << 24);
         end
         else begin
             if(cnt_add)
@@ -82,6 +82,7 @@ always @(*)begin
     data_length_reg_load  = 1'b0;
     case(state)
         IDLE:begin
+            cnt_rst = 1'b1;
             if(start)begin
                 state_n = CTRL;
                 wr_sop = 1'b1;
