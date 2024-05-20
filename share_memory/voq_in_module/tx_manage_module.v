@@ -221,7 +221,7 @@ always @(*)begin
                         add_rst = 1'b1;
                         state_n = RECEIVE1;
                     end
-                end
+                end 
                 
             end
 

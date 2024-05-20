@@ -7,6 +7,7 @@ module send_module
 
     input   wire                            start,
     output  wire                            done,
+    output  wire                            ready,
 
     input   wire    [WIDTH_SEL-1 : 0]       dest,
     input   wire    [WIDTH_PRIORITY-1 : 0]  priority,
@@ -106,6 +107,7 @@ assign wr_data =    (state == CTRL)?    {dest,priority,length}:
 assign wr_vld = (state == CTRL) || (state == SEND);
 
 assign done = wr_eop;
+assign ready = state == IDLE;
 
 
 

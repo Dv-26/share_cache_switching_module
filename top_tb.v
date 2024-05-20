@@ -69,7 +69,8 @@ reg                             send_start[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_SEL-1 : 0]       send_dest[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_PRIORITY-1 : 0]  send_priority[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_LENGTH-1 : 0]    send_length[PORT_NUB_TOTAL-1 : 0];
-wire                            send_done[PORT_NUB_TOTAL-1 : 0];
+wire    [PORT_NUB_TOTAL-1 : 0]  send_done;
+wire    [PORT_NUB_TOTAL-1 : 0]  send_ready;
 
 generate
     genvar i;
@@ -77,6 +78,7 @@ generate
 
         wire                            start;
         wire                            done;
+        wire                            ready;
         wire    [WIDTH_SEL-1 : 0]       dest;
         wire    [WIDTH_PRIORITY-1 : 0]  priority;
         wire    [WIDTH_LENGTH-1 : 0]    length;
@@ -91,6 +93,7 @@ generate
             .clk(clk),
             .rst_n(rst_n),
             .start(start),
+            .ready(ready),
             .done(done),
             .dest(dest),
             .priority(priority),
@@ -103,6 +106,7 @@ generate
 
         assign start = send_start[i];
         assign send_done[i] = done;
+        assign send_ready[i] = ready;
         assign dest = send_dest[i];
         assign priority = send_priority[i];
         assign length = send_length[i];
@@ -134,6 +138,7 @@ task init;
             send_dest[i] = 0;
             send_priority[i] = 0;
             send_length[i] = 0;
+            top_ready[i] = 1;
         end
     end
 endtask
@@ -155,45 +160,38 @@ task send;
     end
 endtask
 
+task random_send;
+    integer rx;
+    integer priority;
+    integer data_length;
+    integer n;
+    begin
+        for(n=0; n<PORT_NUB_TOTAL; n=n+1)begin
+            if(send_ready[n])begin
+                rx = {$random} % PORT_NUB_TOTAL;
+                priority = {$random} % `PRIORITY;
+                data_length = ({$random} & 240) + 15;
+                send(n,rx,priority,data_length);
+            end
+        end
+    end
+endtask
+
+integer times;
+integer n;
 initial 
 begin
     init();
     #(15*CLK_TIME)
-    send(0,3,1,16);
-    send(1,3,1,16);
-    send(2,1,1,16);
-    //send(3,3,1,16);
-    send(4,3,2,16);
-    send(5,3,2,24);
-    send(6,3,2,24);
-    send(7,3,2,24);
-    //send(8,1,2,24);
-    //send(9,1,2,25);
-    //send(10,1,2,26);
-    //send(11,1,2,27);
-    //send(12,1,2,28);
-    //send(13,1,2,29);
-    //send(14,1,2,30);
-    //send(15,1,2,31);
-    //send(6,1,2,34);
-    //send(7,1,2,35);
-    //top_ready[0] = 1; 
-    
-    //top_ready[2] = 1; 
-    //top_ready[3] = 1; 
+    random_send();
+    for(times = 0; times<20; times=times+1)begin
+        wait(|send_ready)
+            random_send();
+            #(($random % 50)*CLK_TIME);
+    end
     #(250*CLK_TIME)
-    
-    #(15*CLK_TIME)
-    //send(0,1,1,10);
-    //send(1,2,1,15);
-    //send(2,1,2,20);
-    //send(3,2,2,30);
-    //top_ready[0] = 1; 
-    top_ready[1] = 1; 
-    top_ready[3] = 1; 
-    //top_ready[3] = 1; 
-    #(5000*CLK_TIME)
     $stop();
 end
+
 
 endmodule
