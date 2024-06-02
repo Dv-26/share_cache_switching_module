@@ -222,8 +222,8 @@ generate
 
         wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
         wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux_out;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_in_mouule_data_in;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_in_mouule_data_out;
+        wire    [WIDTH_VOQ0-1 : 0]  voq_in_module_data_in;
+        wire    [WIDTH_VOQ0-1 : 0]  voq_in_module_data_out;
         wire                        voq_in_module_full;
         wire                        voq_in_module_wr_in;
         wire                        voq_in_module_wr_out;
@@ -233,23 +233,23 @@ generate
             assign mux[j] = {j,voq0_out[j]};
         end
         wire                        voq_full;
+
         voq_in_module voq_in_module
         (
             .clk(clk),
             .rst_n(rst_n),
-            .data_in(voq_in_mouule_data_in),
-            .voq_full(voq_full),
+            .voq_full_in(voq_full),
+            .data_in(voq_in_module_data_in),
             .nub(voq_in_module_nub),
-            .wr_en_in(voq_in_module_wr_in),
-            .wr_en_out(voq_in_module_wr_out),
-            .data_out(voq_in_mouule_data_out),
-            .full(voq_in_module_full)
+            .valid_in(voq_in_module_wr_in),
+            .valid_out(voq_in_module_wr_out),
+            .data_out(voq_in_module_data_out)
+
         );
 
         assign mux_out = mux[mux_sel_1[i]];  
         assign voq_in_module_nub = mux_out[WIDTH_SEL+WIDTH_VOQ0-1 : WIDTH_VOQ0]; 
-        assign voq_in_mouule_data_in = mux_out[WIDTH_VOQ0-1 : 0];
-        assign mux_ctrl_full_in[i] = voq_in_module_full;
+        assign voq_in_module_data_in = mux_out[WIDTH_VOQ0-1 : 0];
         assign voq_in_module_wr_in = mux_ctrl_wr_out[i];
 
 
@@ -282,10 +282,10 @@ generate
             .empty(voq_empty)
         );
 
-        assign voq_wr_data = voq_in_mouule_data_out[WIDTH_VOQ1-1 : 0];
-        assign voq_wr_sel = voq_in_mouule_data_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
+        assign voq_wr_data = voq_in_module_data_out[WIDTH_VOQ1-1 : 0];
+        assign voq_wr_sel = voq_in_module_data_out[WIDTH_VOQ0-1 : WIDTH_VOQ0-WIDTH_SEL];
         assign voq_wr_en = voq_in_module_wr_out;
-
+        assign mux_ctrl_full_in[i] = voq_full;
         assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
         assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign voq_rd_en = rd_en[i];

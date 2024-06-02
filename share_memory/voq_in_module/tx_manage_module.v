@@ -6,116 +6,124 @@ module tx_manage_fsm
 (
     input   wire                            clk,
     input   wire                            rst_n,
-    input   wire    [WIDTH_LENGTH-1 : 0]    length_in,
-    input   wire    [WIDTH_SEL-1 : 0]       tx_in,
-    input   wire                            top_rd_en_in,
+
+    input   wire                            keep_in,
+
+    input   wire    [WIDTH_PORT-1 : 0]      data_in,
+    input   wire                            valid_in,
     input   wire    [WIDTH_SEL-1 : 0]       nub_in,
-    output  reg                             valid_out,   
-    output  reg                             cut_1to2_out
+
+    output  wire    [WIDTH_PORT-1 : 0]      data_out,
+    output  wire    [WIDTH_SEL-1 : 0]       nub_out,
+    output  wire                            valid_out
 );
 
+localparam  WIDTH_DATA      = `DATA_WIDTH; 
 localparam  WIDTH_LENGTH    = $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_SEL       = $clog2(`PORT_NUB_TOTAL);
-localparam  NUB_0           = NUB;
+localparam  WIDTH_PORT      = WIDTH_SEL +  WIDTH_DATA;
+localparam  WIDTH_FIFO      = WIDTH_SEL + WIDTH_PORT;  
+localparam  PORT_NUB        = `PORT_NUB_TOTAL;
+localparam  WIDTH_PRIORITY  = $clog2(`PRIORITY);
+localparam  WIDTH_CRC       = `CRC32_LENGTH;
 
-reg     error_nub_load;
-wire    error_eq;
-reg     [WIDTH_SEL-1 : 0]   error_nub_cnt;
+wire    [WIDTH_SEL-1 : 0]   data_in_tx;
+reg                         out_sel;
+assign  data_in_tx = data_in[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
+
+reg     fifo_wr_en;
+reg     fifo_rd_en;
+wire    fifo_full;
+wire    fifo_empty;
+wire    empty;
+
+wire    [WIDTH_SEL-1 : 0]   fifo_out_tx;
+wire    [WIDTH_SEL-1 : 0]   fifo_out_nub;
+wire    [WIDTH_FIFO-1 : 0]  fifo_data_in;
+wire    [WIDTH_FIFO-1 : 0]  fifo_data_out;
+
+assign  {fifo_out_nub, fifo_out_tx} = fifo_data_out[WIDTH_FIFO-1 : WIDTH_FIFO - 2*WIDTH_SEL];
+
+reg_fifo
+#(
+    .DATA_WIDTH(WIDTH_FIFO),
+    .DEPTH(PORT_NUB)
+)
+fifo 
+(
+    .clk(clk),
+    .rst_n(rst_n),
+    .wr_en(fifo_wr_en),
+    .wr_data(fifo_data_in),
+    .rd_en(fifo_rd_en),
+    .rd_data(fifo_data_out),
+    .full(fifo_full),
+    .empty(fifo_empty)
+);
+
+assign fifo_data_in = (out_sel)? data_in:fifo_data_out;
+
+reg                         out_valid;
+reg     [WIDTH_FIFO : 0]    out_reg;
+wire    [WIDTH_FIFO : 0]    out_reg_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
-        error_nub_cnt <= 0;
+        out_reg <= 0;
     else
-        if(error_nub_load)
-            error_nub_cnt <= nub_in;
+        out_reg <= out_reg_n;
 end
-assign error_eq = error_nub_cnt-1 == nub_in;
 
-reg    cnt_add,cnt_rst,nub_add_cnt;
-reg [WIDTH_SEL-1 : 0]   nub_cnt;
-wire    nub_eq;
+assign out_reg_n =  (keep_in)?  out_reg:
+                    (out_sel)?  {out_valid, fifo_data_out}:
+                                {out_valid, nub_in, data_in};
+
+assign {valid_out,nub_out,data_out} = out_reg;
+
+reg     [WIDTH_SEL-1 : 0]   nub_reg;
+reg                         nub_add,nub_rst;
+wire                        nub_eq_in;
+wire                        nub_eq_fifo_out;
 
 always @(posedge clk or negedge rst_n)begin
-
-    if(!rst_n)begin
-        nub_cnt <= NUB;
-    end 
+    if(!rst_n)
+        nub_reg <= NUB;
     else begin
-
-        if(cnt_rst)begin
-            nub_cnt <= NUB;
-        end
-        else begin
-
-            if(nub_add_cnt)begin
-                nub_cnt <=  nub_cnt + add_cnt;
-            end
-            else begin
-                if(cnt_add)
-                    nub_cnt <= nub_cnt + 1;
-            end
-
-        end
-
+        if(nub_rst)
+            nub_reg <= NUB;
+        else
+            if(nub_add)
+                nub_reg <= nub_reg + 1;
     end
-
 end
 
-reg     add_add,add_rst;
-reg [WIDTH_SEL-1 : 0]   add_cnt;
+reg     [WIDTH_LENGTH-1 : 0]    length_reg;
+reg                             length_reg_minus,length_reg_load;
+wire                            length_eq_zero;
+wire    [WIDTH_LENGTH-1 : 0]    data_length_in;
 
 always @(posedge clk or negedge rst_n)begin
-
-    if(!rst_n)begin
-        add_cnt <= 0;
-    end
-    else begin
-
-        if(add_rst)begin
-            add_cnt <= 0;
-        end
-        else begin
-            if(add_add)
-                add_cnt <= add_cnt + 1;
-        end
-
-    end
-
-end
-
-wire    data_valid;
-
-assign  nub_eq = (nub_cnt == nub_in);
-assign  data_valid = (tx_in == NUB) && (top_rd_en_in == 1'b1);
-
-reg     length_reg_minus,length_load;
-wire    length_eq_zero;   
-
-reg [WIDTH_LENGTH-1 : 0]    length_reg;
-
-always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)begin
+    if(!rst_n)
         length_reg <= 0;
-    end
     else begin
-        if(length_load)
-            length_reg <= length_in - add_cnt;
-        else begin
-            if(length_reg_minus && !length_eq_zero)
-                length_reg <= length_reg - 1;
-        end
+        if(length_reg_load)
+            length_reg <= length_reg + data_length_in;
+        else if(length_reg_minus)
+            length_reg <= length_reg - 1;
     end
 end
 
+assign data_length_in = data_in[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY];
 assign length_eq_zero = length_reg == 0;
 
-localparam IDLE         = 2'b00;
-localparam RECEIVE1     = 2'b01;
-localparam RECEIVE2     = 2'b10;
-localparam RECEIVE3     = 2'b11;
+assign tx_valid         = data_in_tx == NUB; 
+assign nub_eq_in        = nub_in == nub_reg;
+assign nub_eq_fifo_out  = (nub_in == fifo_out_nub) & !fifo_empty;
 
+localparam IDLE =   1'b0;
+localparam RUN  =   1'b1;
 
-reg [1:0]   state,state_n;
+reg state,state_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -124,110 +132,100 @@ always @(posedge clk or negedge rst_n)begin
         state <= state_n;
 end
 
-
 always @(*)begin
-    state_n = state;
-    length_load = 1'b0;
-    cnt_add = 1'b0;
-    add_rst = 1'b0;
-    cnt_rst = 1'b0;
-    add_add = 1'b0;
-    error_nub_load = 1'b0;
-    length_reg_minus = 1'b0;
-    valid_out = 1'b0;
-    cut_1to2_out = 1'b0;
-    nub_add_cnt = 1'b0;
-    case(state)
-        IDLE:begin
 
-            if(data_valid)begin
-                if(nub_eq)begin
+    state_n             = state;
+    fifo_wr_en          = 1'b0;
+    fifo_rd_en          = 1'b0;
+    out_sel             = 1'b0;
+    nub_add             = 1'b0;
+    nub_rst             = 1'b0;
+    length_reg_minus    = 1'b0;
+    length_reg_load     = 1'b0;
+    out_valid           = 1'b0;  
 
-                    length_load = 1'b1;
-                    cnt_add = 1'b1;
-                    valid_out = 1'b1;
-                    state_n = RECEIVE1;
+    if(!keep_in)begin
 
+        case(state)
+            IDLE:begin
+                if(valid_in)begin
+
+                    if(tx_valid)begin
+
+                        if(nub_eq_in)begin
+                            state_n = RUN;
+                            length_reg_load = 1;
+                            out_valid = 1;
+                            nub_add = 1;
+                        end
+                        else begin
+                            fifo_wr_en = 1;
+                            length_reg_minus = 1;
+                        end
+
+                    end
+                    else
+                        out_valid = 1;
+                end
+            end
+            RUN:begin
+                if(length_eq_zero)begin
+                    state_n = IDLE;
+                    nub_rst = 1;
                 end
                 else begin
-                    error_nub_load = 1'b1;
-                    state_n = RECEIVE2;
-                end
-            end
 
-        end
-        RECEIVE1:begin
+                    if(valid_in)begin
 
-            if(data_valid)begin
+                        if(tx_valid)begin
 
-                length_reg_minus = 1'b1;
+                            length_reg_minus = 1'b1;
 
-                if(nub_eq)begin
-                    cnt_add = 1'b1;
-                    valid_out = 1'b1;
-                end
-                else begin
-                    state_n = RECEIVE2;
-                    error_nub_load = 1'b1;
-                end
-                
-            end
+                            case({nub_eq_in,nub_eq_fifo_out})
+                                2'b00:begin
+                                    out_sel = 1'b1;
+                                    fifo_wr_en = 1'b1;
+                                end
+                                2'b01:begin
+                                    out_sel = 1'b1;
+                                    fifo_rd_en = 1'b1;
+                                    nub_add = 1'b1;
+                                    out_valid = 1'b1;
+                                end
+                                2'b10:begin
+                                    out_valid = 1'b1;
+                                    nub_add = 1'b1;
+                                end
+                                2'b11:begin
+                                    out_sel = 1'b1;
+                                    fifo_wr_en = 1'b1;
+                                    fifo_rd_en = 1'b1;
+                                    nub_add = 1'b1;
+                                    out_valid = 1'b1;
+                                end
+                            endcase
 
-            if(length_eq_zero)begin
-                cnt_rst = 1'b1;
-                state_n = IDLE;
-            end
+                        end
+                        else
+                            out_valid = 1'b1;
 
-        end
-        RECEIVE2: begin
-
-
-            if(data_valid)begin
-
-                length_reg_minus = 1'b1;
-
-                if(nub_eq)begin
-
-                    cnt_add = 1;
-                    if(length_eq_zero)begin
-                        length_load = 1'b1;
                     end
                     else begin
-                        // nub_add_cnt = 1'b1;
+
+                        if(nub_eq_fifo_out)begin
+                            out_sel = 1'b1;
+                            fifo_rd_en = 1'b1;
+                            nub_add = 1'b1;
+                        end
+
                     end
-                    add_add = 1;
-                    valid_out = 1'b1;
-                    state_n = RECEIVE3;
+
                 end
-                else 
-                    add_add = 1;
-
             end
+        endcase
+        
+    end
 
-        end
-        RECEIVE3: begin
-
-            if(data_valid)begin
-
-                length_reg_minus = 1'b1;
-                add_add = 1;
-
-                if(nub_eq)begin
-                    valid_out = 1'b1;
-                    cnt_add = 1'b1;
-                    if(error_eq)begin
-                        cut_1to2_out = 1'b1;
-                        nub_add_cnt = 1'b1;
-                        add_rst = 1'b1;
-                        state_n = RECEIVE1;
-                    end
-                end 
-                
-            end
-
-        end
-
-    endcase
 end
 
 endmodule
