@@ -1,9 +1,9 @@
 //端口�?
-`define PORT_NUB_TOTAL 8
+`define PORT_NUB_TOTAL 4
 //数据位宽
 `define DATA_WIDTH 32
 //SRAM深度
-`define DEPTH   1000
+`define DEPTH   8000
 //�?大包�?
 `define DATA_LENGTH_MAX   256
 //优先级数�?

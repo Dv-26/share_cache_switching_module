@@ -9,12 +9,12 @@ module dc_fifo
     input   wire                        wr_clk,
     input   wire    [DATA_BIT-1:0]      wr_data,
     input   wire                        wr_en,
-    output  wire    [DATA_DEPTH-1:0]    wr_cnt,
+    output  wire    [WIDTH_ADDR-1:0]    wr_cnt,
 
     input   wire                        rd_clk,
     output  wire    [DATA_BIT-1:0]      rd_data,
     input   wire                        rd_en,
-    output  wire    [DATA_DEPTH-1:0]    rd_cnt,
+    output  wire    [WIDTH_ADDR-1:0]    rd_cnt,
 
     output  wire                        empty,
     output  wire                        full
@@ -80,7 +80,6 @@ assign wr_cnt = wr_cnt_reg;
 
 
 
-reg     full_out;
 /* wire    full_out_n; */
 
 assign full_out_n = (w_prt_gray[WIDTH_ADDR] != r_prt_gray_rr[WIDTH_ADDR]) && (w_prt_gray[WIDTH_ADDR - 1] != r_prt_gray_rr[WIDTH_ADDR - 1]) && (w_prt_gray[WIDTH_ADDR-2:0] == r_prt_gray_rr[WIDTH_ADDR-2:0]);

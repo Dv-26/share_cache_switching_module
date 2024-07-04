@@ -10,25 +10,30 @@ module switch_moudle
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rx_in,
     input       wire    [WIDTH_SEL_TOTAL-1 : 0]             tx_in,
     input       wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_in,
-    output      wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out,
-    input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel,
-    input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
     output      wire    [PORT_NUB_TOTAL-1 : 0]              ready,
 
+    input       wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel,
     output      wire    [PORT_NUB_TOTAL**2-1 : 0]           empty,
+    input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_en,
+    input       wire    [PORT_NUB_TOTAL-1 : 0]              rd_done_in,
+    output      wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out,
+
+
     output      wire                                        full,
     output      wire                                        alm_ost_full
 );
-reg     [WIDTH_SEL-1 : 0]               shift_select;
-localparam  PORT_NUB_TOTAL = `PORT_NUB_TOTAL;
-localparam  DATA_WIDTH  =   `DATA_WIDTH;
 
-localparam  WIDTH_PORT  =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_FILTER =  2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_VOQ0  =   $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
-localparam  WIDTH_VOQ1  =   `DATA_WIDTH;
-localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT; 
-localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
+reg     [WIDTH_SEL-1 : 0]               shift_select;
+
+localparam  PORT_NUB_TOTAL  =   `PORT_NUB_TOTAL;
+localparam  DATA_WIDTH      =   `DATA_WIDTH;
+
+localparam  WIDTH_PORT      =   1 + 2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
+localparam  WIDTH_FILTER    =   2 * $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
+localparam  WIDTH_VOQ0      =   $clog2(`PORT_NUB_TOTAL) + `DATA_WIDTH;
+localparam  WIDTH_VOQ1      =   `DATA_WIDTH;
+localparam  WIDTH_TOTAL     =   PORT_NUB_TOTAL * WIDTH_PORT; 
+localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
 
 // ready_generate ready_generate
@@ -220,14 +225,15 @@ generate
 
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop5
 
-        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux[PORT_NUB_TOTAL-1 : 0];
-        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]  mux_out;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_in_module_data_in;
-        wire    [WIDTH_VOQ0-1 : 0]  voq_in_module_data_out;
-        wire                        voq_in_module_full;
-        wire                        voq_in_module_wr_in;
-        wire                        voq_in_module_wr_out;
-        wire    [WIDTH_SEL-1 : 0]   voq_in_module_nub; 
+        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]    mux[PORT_NUB_TOTAL-1 : 0];
+        wire    [WIDTH_VOQ0+WIDTH_SEL-1 : 0]    mux_out;
+        wire    [WIDTH_VOQ0-1 : 0]              voq_in_module_data_in;
+        wire    [WIDTH_VOQ0-1 : 0]              voq_in_module_data_out;
+        wire                                    voq_in_module_full;
+        wire                                    voq_in_module_wr_in;
+        wire                                    voq_in_module_wr_out;
+        wire    [WIDTH_SEL-1 : 0]               voq_in_module_nub; 
+        wire    [PORT_NUB_TOTAL-1 : 0]          voq_in_module_done; 
 
         for(j=0; j<PORT_NUB_TOTAL; j=j+1)begin
             assign mux[j] = {j,voq0_out[j]};
@@ -243,8 +249,8 @@ generate
             .nub(voq_in_module_nub),
             .valid_in(voq_in_module_wr_in),
             .valid_out(voq_in_module_wr_out),
-            .data_out(voq_in_module_data_out)
-
+            .data_out(voq_in_module_data_out),
+            .done_out(voq_in_module_done)
         );
 
         assign mux_out = mux[mux_sel_1[i]];  
@@ -252,14 +258,31 @@ generate
         assign voq_in_module_data_in = mux_out[WIDTH_VOQ0-1 : 0];
         assign voq_in_module_wr_in = mux_ctrl_wr_out[i];
 
+        wire    [PORT_NUB_TOTAL-1 : 0]    package_cnt_minus;
+        wire    [PORT_NUB_TOTAL-1 : 0]    package_cnt_empty;
+        wire    [WIDTH_SEL-1 : 0]         package_cnt_sel;
 
-        wire    [WIDTH_VOQ1-1 : 0]  voq_wr_data;
-        wire    [WIDTH_SEL-1 : 0]   voq_wr_sel;
-        wire                        voq_wr_en;
-        wire    [WIDTH_VOQ1-1 : 0]  voq_rd_data;
-        wire    [WIDTH_SEL-1 : 0]   voq_rd_sel;
-        wire                        voq_rd_en;
-        wire    [PORT_NUB_TOTAL-1 : 0]voq_empty;
+        package_cnt package_cnt
+        (
+            .clk            (clk),
+            .rst_n          (rst_n),
+            .cnt_add        (voq_in_module_done),
+            .cnt_minus      (package_cnt_minus),
+            .minus_sel      (package_cnt_sel),
+            .cnt_eq_zero    (package_cnt_empty)
+        );
+
+        assign package_cnt_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL]; 
+        assign empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = package_cnt_empty;
+        assign package_cnt_minus                                = rd_done_in[i];
+
+        wire    [WIDTH_VOQ1-1 : 0]      voq_wr_data;
+        wire    [WIDTH_SEL-1 : 0]       voq_wr_sel;
+        wire                            voq_wr_en;
+        wire    [WIDTH_VOQ1-1 : 0]      voq_rd_data;
+        wire    [WIDTH_SEL-1 : 0]       voq_rd_sel;
+        wire                            voq_rd_en;
+        wire    [PORT_NUB_TOTAL-1 : 0]  voq_empty;
 
         voq
         #(
@@ -289,7 +312,6 @@ generate
         assign port_out[(i+1)*WIDTH_VOQ1-1 : i*WIDTH_VOQ1] = voq_rd_data;
         assign voq_rd_sel = rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL];
         assign voq_rd_en = rd_en[i];
-        assign empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL] = voq_empty;
     end
 
 endgenerate

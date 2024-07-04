@@ -8,6 +8,8 @@ module tx_manage_fsm
     input   wire                            rst_n,
 
     input   wire                            keep_in,
+    input   wire    [PORT_NUB-1 : 0]        done_in,
+    output  reg     [PORT_NUB-1 : 0]        done_out,
 
     input   wire    [WIDTH_PORT-1 : 0]      data_in,
     input   wire                            valid_in,
@@ -42,12 +44,12 @@ wire    [WIDTH_SEL-1 : 0]   fifo_out_nub;
 wire    [WIDTH_FIFO-1 : 0]  fifo_data_in;
 wire    [WIDTH_FIFO-1 : 0]  fifo_data_out;
 
-assign  {fifo_out_nub, fifo_out_tx} = fifo_data_out[WIDTH_FIFO-1 : WIDTH_FIFO - 2*WIDTH_SEL];
+assign  fifo_out_nub = fifo_data_out[WIDTH_FIFO-1 : WIDTH_FIFO - 1*WIDTH_SEL];
 
 reg_fifo
 #(
     .DATA_WIDTH(WIDTH_FIFO),
-    .DEPTH(PORT_NUB)
+    .DEPTH(2*PORT_NUB)
 )
 fifo 
 (
@@ -61,7 +63,7 @@ fifo
     .empty(fifo_empty)
 );
 
-assign fifo_data_in = (out_sel)? data_in:fifo_data_out;
+assign fifo_data_in = (out_sel)? {nub_in, data_in}:fifo_data_out;
 
 reg                         out_valid;
 reg     [WIDTH_FIFO : 0]    out_reg;
@@ -118,7 +120,7 @@ assign length_eq_zero = length_reg == 0;
 
 assign tx_valid         = data_in_tx == NUB; 
 assign nub_eq_in        = nub_in == nub_reg;
-assign nub_eq_fifo_out  = (nub_in == fifo_out_nub) & !fifo_empty;
+assign nub_eq_fifo_out  = (nub_reg == fifo_out_nub) & !fifo_empty;
 
 localparam IDLE =   1'b0;
 localparam RUN  =   1'b1;
@@ -132,6 +134,8 @@ always @(posedge clk or negedge rst_n)begin
         state <= state_n;
 end
 
+reg done;
+
 always @(*)begin
 
     state_n             = state;
@@ -143,6 +147,7 @@ always @(*)begin
     length_reg_minus    = 1'b0;
     length_reg_load     = 1'b0;
     out_valid           = 1'b0;  
+    done                = 1'b0;
 
     if(!keep_in)begin
 
@@ -160,7 +165,6 @@ always @(*)begin
                         end
                         else begin
                             fifo_wr_en = 1;
-                            length_reg_minus = 1;
                         end
 
                     end
@@ -172,6 +176,9 @@ always @(*)begin
                 if(length_eq_zero)begin
                     state_n = IDLE;
                     nub_rst = 1;
+                    done = 1;
+                    if(valid_in)
+                        out_valid = 1;
                 end
                 else begin
 
@@ -179,7 +186,6 @@ always @(*)begin
 
                         if(tx_valid)begin
 
-                            length_reg_minus = 1'b1;
 
                             case({nub_eq_in,nub_eq_fifo_out})
                                 2'b00:begin
@@ -188,22 +194,27 @@ always @(*)begin
                                 end
                                 2'b01:begin
                                     out_sel = 1'b1;
+                                    length_reg_minus = 1'b1;
+                                    fifo_wr_en = 1'b1;
                                     fifo_rd_en = 1'b1;
                                     nub_add = 1'b1;
                                     out_valid = 1'b1;
                                 end
                                 2'b10:begin
                                     out_valid = 1'b1;
+                                    length_reg_minus = 1'b1;
                                     nub_add = 1'b1;
                                 end
                                 2'b11:begin
                                     out_sel = 1'b1;
+                                    length_reg_minus = 1'b1;
                                     fifo_wr_en = 1'b1;
                                     fifo_rd_en = 1'b1;
                                     nub_add = 1'b1;
                                     out_valid = 1'b1;
                                 end
                             endcase
+
 
                         end
                         else
@@ -214,8 +225,10 @@ always @(*)begin
 
                         if(nub_eq_fifo_out)begin
                             out_sel = 1'b1;
+                            length_reg_minus = 1'b1;
                             fifo_rd_en = 1'b1;
                             nub_add = 1'b1;
+                            out_valid = 1'b1;
                         end
 
                     end
@@ -227,5 +240,20 @@ always @(*)begin
     end
 
 end
+
+reg    [PORT_NUB-1 : 0]    done_out_n;
+
+always @(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        done_out <= 0;
+    else
+        done_out <= done_out_n;
+end
+
+always @(*)begin
+    done_out_n = done_in;
+    done_out_n[NUB] = done;
+end
+
 
 endmodule

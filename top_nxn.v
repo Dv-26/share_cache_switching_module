@@ -44,6 +44,7 @@ wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_in;
 wire    [WIDTH_VOQ1*PORT_NUB_TOTAL-1 : 0]   port_out;
 wire    [WIDTH_SEL_TOTAL-1 : 0]             rd_sel;
 wire    [PORT_NUB_TOTAL-1 : 0]              rd_en;
+wire    [PORT_NUB_TOTAL-1 : 0]              rd_done_in;
 wire    [PORT_NUB_TOTAL**2-1 : 0]           empty;
 wire                                        full;
 wire    [PORT_NUB_TOTAL-1 : 0]              ready_out;
@@ -60,6 +61,7 @@ switch_moudle switch_moudle
     .port_out(port_out),
     .rd_sel(rd_sel),
     .rd_en(rd_en),
+    .rd_done_in(rd_done_in),
     .empty(empty),
     .full(full),
     .ready(ready_out),
@@ -87,8 +89,8 @@ generate
         in_module#(.num(i))
         in_module
         (
-            .in_clk(clk),
-            .out_clk(clk),
+            .external_clk(clk),
+            .internal_clk(clk),
             .rst_n(rst_n),
             .wr_sop(in_wr_sop),
             .wr_eop(in_wr_eop),
@@ -119,26 +121,28 @@ generate
         wire                            out_rd_vld;
         wire    [DATA_WIDTH-1 : 0]      out_rd_data;
         wire                            out_rd_en;
+        wire                            out_rd_done;
         wire    [WIDTH_SEL-1 : 0]       out_rd_sel;
         wire    [DATA_WIDTH-1 : 0]      out_data;
         wire    [PORT_NUB_TOTAL : 0]    out_empty;
         wire                            out_qos_controll; //输出模式控制
 
-        sel_control out_module
+        output_module#(.NUB(i))
+        output_module
         (
-            .clk(clk),
-            .rst_n(rst_n),
-            .rd_sop(out_rd_sop),
-            .rd_eop(out_rd_eop),
-            .rd_vld(out_rd_vld),
-            .ready(out_ready),
-            .rd_data(out_rd_data),
-            .rd_en(out_rd_en),
-            .rd_sel(out_rd_sel),
-            .empty(out_empty),
-            .data_in(out_data),
-            .qos_controll(out_qos_controll),
-            .error(out_error)
+            .internal_clk   (clk), 
+            .external_clk   (clk),
+            .rst_n          (rst_n), 
+            .empty_in       (out_empty),
+            .port_in        (out_data),
+            .rd_sel         (out_rd_sel),
+            .rd_en          (out_rd_en),
+            .rd_done        (out_rd_done),
+            .ready_in       (out_ready),
+            .rd_sop         (out_rd_sop),
+            .rd_eop         (out_rd_eop),
+            .rd_vld         (out_rd_vld),
+            .rd_data        (out_rd_data)
         );
 
         assign  rd_sop[i]        = out_rd_sop;
@@ -146,6 +150,7 @@ generate
         assign  rd_vld[i]        = out_rd_vld;
         assign  rd_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH]  = out_rd_data;
         assign  out_ready        = ready[i];
+        assign  rd_done_in[i]    = out_rd_done; 
         assign  rd_en[i]         = out_rd_en;
         assign  rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = out_rd_sel;
         assign  out_empty        = empty[(i+1)*PORT_NUB_TOTAL-1 : i*PORT_NUB_TOTAL]; 

@@ -29,7 +29,7 @@ generate
         wire                                valid;
         assign  {valid,rx_ports,tx_ports,data} = port_in[(i+1)*WIDTH_PORT_IN-1 : i*WIDTH_PORT_IN];
         assign  port_out_n[(i+1)*WIDTH_PORT_OUT-1 : i*WIDTH_PORT_OUT] = (rx_ports == dest)? {rx_ports,tx_ports,data}:{WIDTH_PORT_OUT{1'b0}};
-        assign  port_vaild[i] = (valid == 1'b1)? (rx_ports == dest)? 1'b1:1'b0:1'b0;
+        assign  port_vaild[i] = (valid == 1'b1)? (rx_ports == dest && tx_ports != rx_ports)? 1'b1:1'b0:1'b0;
     end
 
     if(`PIPELINE)begin

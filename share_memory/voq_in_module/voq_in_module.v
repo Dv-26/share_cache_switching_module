@@ -11,7 +11,8 @@ module voq_in_module
     input   wire                        valid_in,
 
     output  wire                        valid_out,
-    output  wire    [WIDTH_PORT-1 : 0]  data_out
+    output  wire    [WIDTH_PORT-1 : 0]  data_out,
+    output  wire    [PORT_NUB-1 : 0]    done_out
 
 );
 
@@ -26,6 +27,7 @@ localparam  WIDTH_PRIORITY  = $clog2(`PRIORITY);
 wire    [WIDTH_PORT-1 : 0]  port_data[PORT_NUB : 0];
 wire    [WIDTH_SEL-1 : 0]   port_nub[PORT_NUB : 0];
 wire    [PORT_NUB : 0]      port_valid;
+wire    [PORT_NUB-1 : 0]      done[PORT_NUB : 0];
 
 assign port_data[0] = data_in;
 assign port_valid[0] = valid_in;
@@ -33,6 +35,7 @@ assign port_nub[0] = nub;
 
 assign data_out = port_data[PORT_NUB];
 assign valid_out = port_valid[PORT_NUB];
+assign done_out = done[PORT_NUB];
 
 generate
     genvar i; 
@@ -44,15 +47,17 @@ generate
         )
         tx_manage_fsm
         (
-            .clk(clk),
-            .rst_n(rst_n),
-            .keep_in(voq_full_in),
-            .data_in(port_data[i]),
-            .valid_in(port_valid[i]),
-            .nub_in(port_nub[i]),
-            .data_out(port_data[i+1]),
-            .nub_out(port_nub[i+1]),
-            .valid_out(port_valid[i+1])
+            .clk                (clk),
+            .rst_n              (rst_n),
+            .keep_in            (voq_full_in),
+            .data_in            (port_data[i]),
+            .valid_in           (port_valid[i]),
+            .nub_in             (port_nub[i]),
+            .done_in            (done[i]),
+            .data_out           (port_data[i+1]),
+            .nub_out            (port_nub[i+1]),
+            .valid_out          (port_valid[i+1]),
+            .done_out           (done[i+1])
         );
 
     end

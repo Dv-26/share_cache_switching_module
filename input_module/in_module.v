@@ -7,8 +7,8 @@ module in_module
 )
 (
     input   wire                            rst_n,
-    input   wire                            in_clk,
-    input   wire                            out_clk,
+    input   wire                            external_clk,
+    input   wire                            internal_clk,
     input   wire                            wr_sop,
     input   wire                            wr_eop,
     input   wire                            wr_vld,
@@ -33,7 +33,7 @@ wire                crc_rst_n;
 
 crc16_32bit crc 
 (
-    .clk(in_clk),
+    .clk(external_clk),
     .rst_n(crc_rst_n),
     .data_in(wr_data),
     .crc_out(crc_out),
@@ -53,10 +53,10 @@ dc_fifo
 dc_fifo
 (
     .rst_n(fifo_rst_n),
-    .wr_clk(in_clk),
+    .wr_clk(external_clk),
     .wr_data(wr_data),
     .wr_en(wr_en),
-    .rd_clk(out_clk),
+    .rd_clk(internal_clk),
     .rd_data(fifo_rd_data),
     .rd_en(fifo_rd_en)
 );
@@ -69,7 +69,7 @@ wire            wr_control_ready;
 
 in_wr_controller_fsm wr_controller
 (
-    .clk(in_clk),
+    .clk(external_clk),
     .rst_n(rst_n),
     .eop(wr_eop),
     .sop(wr_sop),
@@ -103,8 +103,8 @@ cdc_handshake
 cdc_handshake
 (
     .rst_n(rst_n),
-    .tx_clk(in_clk),
-    .rx_clk(out_clk),
+    .tx_clk(external_clk),
+    .rx_clk(internal_clk),
     .tx_valid(wr_done),
     .data_in(handshake_in),
     .tx_ready(wr_control_ready),
@@ -127,7 +127,7 @@ wire                        out_sel;
 
 in_rd_controller_fsm rd_control
 (
-    .clk(out_clk),
+    .clk(internal_clk),
     .rst_n(rst_n),
     .start(rx_valid),
     .rx_in(out_dest),

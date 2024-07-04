@@ -65,6 +65,22 @@ top_nxn top_tb
     .ready(top_ready)
 );
 
+wire    [9:0]   tx_cnt,rx_cnt;
+cnt tx_package_cnt
+(
+    .clk(clk),
+    .rst_n(rst_n),
+    .in(top_wr_sop),
+    .cnt_out(tx_cnt)
+);
+cnt rx_package_cnt
+(
+    .clk(clk),
+    .rst_n(rst_n),
+    .in(top_rd_sop),
+    .cnt_out(rx_cnt)
+);
+
 reg                             send_start[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_SEL-1 : 0]       send_dest[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_PRIORITY-1 : 0]  send_priority[PORT_NUB_TOTAL-1 : 0];
@@ -152,14 +168,16 @@ task send;
     input   integer priority;
     input   integer data_length;
     begin
-        @(posedge clk)begin
-            send_dest[tx] <= rx;
-            send_priority[tx] <= priority;
-            send_length[tx] <= data_length;
-            send_start[tx] <= 1;
+        if(tx != rx)begin
+            @(posedge clk)begin
+                send_dest[tx] <= rx;
+                send_priority[tx] <= priority;
+                send_length[tx] <= data_length;
+                send_start[tx] <= 1;
+            end
+            #(CLK_TIME)
+            send_start[tx] = 0;
         end
-        #(CLK_TIME)
-        send_start[tx] = 0;
     end
 endtask
 
@@ -198,10 +216,10 @@ begin
     init();
     wada();
     #(15*CLK_TIME)
-    for(times = 0; times<50; times=times+1)begin
+    for(times = 0; times<20; times=times+1)begin
         wait(|send_ready)
             random_send();
-            #((50)*CLK_TIME);
+            #((500)*CLK_TIME);
     end
     #(600*CLK_TIME)
     #(2500*CLK_TIME)
@@ -210,3 +228,63 @@ end
 
 
 endmodule
+
+
+
+module cnt
+(
+    input   wire                            clk,
+    input   wire                            rst_n,
+
+    input   wire    [PORT_NUB_TOTAL-1 : 0]  in,
+    output  wire    [9:0]                   cnt_out
+);
+
+localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
+localparam  WIDTH_SEL           =   $clog2(PORT_NUB_TOTAL);
+
+wire    [PORT_NUB_TOTAL-1 : 0]  rise;
+reg     [WIDTH_SEL-1 : 0]       sum;
+reg     [9:0]   cnt;
+
+generate
+
+    genvar i;
+
+    for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop
+
+        reg [1:0]   shift_reg;
+
+        always@ (posedge clk or negedge rst_n)begin
+            if(!rst_n)
+                shift_reg <= 0;
+            else 
+                shift_reg <= {shift_reg[0],  in[i]};
+        end
+
+        assign rise[i] = shift_reg[1] && ~shift_reg[0];
+
+    end
+
+endgenerate
+
+integer n;
+always @(*)begin
+    sum = rise[0];
+    for(n=1; n<PORT_NUB_TOTAL; n=n+1)begin
+        sum = sum + rise[n];
+    end
+end
+
+
+always@(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        cnt <= 0;
+    else
+        cnt <= cnt + sum;
+end
+
+assign cnt_out = cnt;
+
+endmodule
+
