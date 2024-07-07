@@ -3,14 +3,18 @@
 
 module top_tb();
 
-localparam  CLK_TIME = 4;
-reg clk,rst_n;
+localparam  CLK_TIME = 8;
+localparam  INTERNAL_CLK_TIME = 4;
+
+reg clk, internal_clk, rst_n;
 
 always #(CLK_TIME/2) clk = !clk;
+always #(INTERNAL_CLK_TIME/2) internal_clk = !internal_clk;
 
 initial 
 begin
     clk = 1;
+    internal_clk = 1;
     rst_n = 0;
     #(10*CLK_TIME) 
     rst_n = 1;
@@ -48,7 +52,8 @@ reg       [PORT_NUB_TOTAL-1 : 0]              top_ready;
 
 top_nxn top_tb
 (
-    .clk(clk),
+    .external_clk(clk),
+    .internal_clk(internal_clk),
     .rst_n(rst_n),
     .wr_sop(top_wr_sop),          
     .wr_eop(top_wr_eop),          
@@ -215,15 +220,18 @@ initial
 begin
     init();
     wada();
+    top_ready[0] = 0;
     #(50*CLK_TIME)
-    for(times = 0; times<30; times=times+1)begin
+    for(times = 0; times<500; times=times+1)begin
+        if(times == 250)
+            top_ready[0] = 1;
         wait(|send_ready)
             random_send();
             #((500)*CLK_TIME);
     end
     #(600*CLK_TIME)
     #(2500*CLK_TIME)
-                                                            $stop();
+    $stop();
 end
 
 

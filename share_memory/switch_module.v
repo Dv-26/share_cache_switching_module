@@ -36,15 +36,6 @@ localparam  WIDTH_TOTAL     =   PORT_NUB_TOTAL * WIDTH_PORT;
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
 
-// ready_generate ready_generate
-// (
-//     .clk(clk),
-//     .rst_n(rst_n),
-//     .cnt_in(shift_select),
-//     .vld_in(vld_in), 
-//     .rx_in(rx_in),
-//     .ready_out(ready)
-// );
 assign ready = (shift_select == PORT_NUB_TOTAL-1)? {PORT_NUB_TOTAL{1'b1}}:{PORT_NUB_TOTAL{1'b0}};
 
 wire    [WIDTH_TOTAL-1 : 0]             shift_in;

@@ -221,6 +221,7 @@ always @(*)begin
             fifo_wr_en_n = 1;
             if(length_eq)begin
                 state_n = RD_DONE;
+                rd_en = 0;
                 fifo_wr_en_n = 0;
             end
         end
@@ -265,6 +266,7 @@ end
 reg     fifo_wr_en;
 wire    [DATA_WIDTH-1 : 0]  fifo_rd_data;
 wire    fifo_rd_en;
+wire    fifo_empty,fifo_full;
 
 dc_fifo 
 #(
@@ -279,7 +281,9 @@ dc_fifo
     .wr_en(fifo_wr_en),
     .rd_clk(external_clk),
     .rd_data(fifo_rd_data),
-    .rd_en(fifo_rd_en)
+    .rd_en(fifo_rd_en),
+    .full(fifo_full),
+    .empty(fifo_empty)
 );
 
 

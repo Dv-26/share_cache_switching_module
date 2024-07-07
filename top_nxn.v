@@ -3,7 +3,8 @@
 
 module top_nxn
 (
-    input       wire                                        clk,
+    input       wire                                        internal_clk,
+    input       wire                                        external_clk,
     input       wire                                        rst_n,
 
     input       wire    [PORT_NUB_TOTAL-1 : 0]              wr_sop,          
@@ -52,7 +53,7 @@ wire    [PORT_NUB_TOTAL-1 : 0]              ready_out;
 
 switch_moudle switch_moudle
 (
-    .clk(clk),
+    .clk(internal_clk),
     .rst_n(rst_n),
     .rx_in(rx_in),
     .tx_in(tx_in),
@@ -89,8 +90,8 @@ generate
         in_module#(.num(i))
         in_module
         (
-            .external_clk(clk),
-            .internal_clk(clk),
+            .external_clk(external_clk),
+            .internal_clk(internal_clk),
             .rst_n(rst_n),
             .wr_sop(in_wr_sop),
             .wr_eop(in_wr_eop),
@@ -130,8 +131,8 @@ generate
         output_module#(.NUB(i))
         output_module
         (
-            .internal_clk   (clk), 
-            .external_clk   (clk),
+            .internal_clk   (internal_clk), 
+            .external_clk   (external_clk),
             .rst_n          (rst_n), 
             .empty_in       (out_empty),
             .port_in        (out_data),
