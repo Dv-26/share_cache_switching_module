@@ -216,14 +216,14 @@ begin
     init();
     wada();
     #(15*CLK_TIME)
-    for(times = 0; times<20; times=times+1)begin
+    for(times = 0; times<300; times=times+1)begin
         wait(|send_ready)
             random_send();
             #((500)*CLK_TIME);
     end
     #(600*CLK_TIME)
     #(2500*CLK_TIME)
-    $stop();
+                                                            $stop();
 end
 
 

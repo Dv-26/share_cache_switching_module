@@ -17,7 +17,7 @@ localparam  WIDTH_OUT   = $clog2(N);
 generate
     genvar i;
     if(N == 2)begin
-        assign  out = in[N-1];
+        assign  out = in[1];
     end
     else begin
 

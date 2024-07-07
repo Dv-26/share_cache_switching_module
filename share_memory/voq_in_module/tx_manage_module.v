@@ -23,51 +23,51 @@ module tx_manage_fsm
 localparam  WIDTH_DATA      = `DATA_WIDTH; 
 localparam  WIDTH_LENGTH    = $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_SEL       = $clog2(`PORT_NUB_TOTAL);
-localparam  WIDTH_PORT      = WIDTH_SEL +  WIDTH_DATA;
-localparam  WIDTH_FIFO      = WIDTH_SEL + WIDTH_PORT;  
+localparam  WIDTH_PORT      = WIDTH_SEL + WIDTH_DATA;
+localparam  WIDTH_LIST      = WIDTH_SEL + WIDTH_DATA;  
 localparam  PORT_NUB        = `PORT_NUB_TOTAL;
 localparam  WIDTH_PRIORITY  = $clog2(`PRIORITY);
 localparam  WIDTH_CRC       = `CRC32_LENGTH;
 
 wire    [WIDTH_SEL-1 : 0]   data_in_tx;
 reg                         out_sel;
+
 assign  data_in_tx = data_in[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
 
-reg     fifo_wr_en;
-reg     fifo_rd_en;
-wire    fifo_full;
-wire    fifo_empty;
-wire    empty;
+reg                         list_wr_en;
+reg                         list_rd_en;
+wire                        list_full;
+wire                        list_empty;
+wire    [WIDTH_LIST-1 : 0]  list_data_in;
+wire    [WIDTH_LIST-1 : 0]  list_data_out;
+wire                        nub_eq_list_out;
 
-wire    [WIDTH_SEL-1 : 0]   fifo_out_tx;
-wire    [WIDTH_SEL-1 : 0]   fifo_out_nub;
-wire    [WIDTH_FIFO-1 : 0]  fifo_data_in;
-wire    [WIDTH_FIFO-1 : 0]  fifo_data_out;
-
-assign  fifo_out_nub = fifo_data_out[WIDTH_FIFO-1 : WIDTH_FIFO - 1*WIDTH_SEL];
-
-reg_fifo
+reg_list
 #(
-    .DATA_WIDTH(WIDTH_FIFO),
-    .DEPTH(2*PORT_NUB)
+    .DEPTH(2*PORT_NUB),
+    .DATA_WIDTH(WIDTH_LIST),
+    .INDEX_WIDTH(WIDTH_SEL)
 )
-fifo 
+reg_list
 (
-    .clk(clk),
-    .rst_n(rst_n),
-    .wr_en(fifo_wr_en),
-    .wr_data(fifo_data_in),
-    .rd_en(fifo_rd_en),
-    .rd_data(fifo_data_out),
-    .full(fifo_full),
-    .empty(fifo_empty)
+    .clk            (clk),
+    .rst_n          (rst_n),
+    .index_in       (nub_in),
+    .wr_data        (list_data_in),
+    .wr_en          (list_wr_en),
+    .search_in      (nub_reg),
+    .rd_data        (list_data_out),
+    .rd_en          (list_rd_en),
+    .search_valid   (nub_eq_list_out),
+    .full           (list_full),
+    .empty          (list_empty)
 );
 
-assign fifo_data_in = (out_sel)? {nub_in, data_in}:fifo_data_out;
+assign list_data_in = (out_sel)? data_in:list_data_out;
 
 reg                         out_valid;
-reg     [WIDTH_FIFO : 0]    out_reg;
-wire    [WIDTH_FIFO : 0]    out_reg_n;
+reg     [WIDTH_LIST+WIDTH_SEL : 0]    out_reg;
+wire    [WIDTH_LIST+WIDTH_SEL : 0]    out_reg_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -77,7 +77,7 @@ always @(posedge clk or negedge rst_n)begin
 end
 
 assign out_reg_n =  (keep_in)?  out_reg:
-                    (out_sel)?  {out_valid, fifo_data_out}:
+                    (out_sel)?  {out_valid, nub_reg, list_data_out}:
                                 {out_valid, nub_in, data_in};
 
 assign {valid_out,nub_out,data_out} = out_reg;
@@ -85,7 +85,6 @@ assign {valid_out,nub_out,data_out} = out_reg;
 reg     [WIDTH_SEL-1 : 0]   nub_reg;
 reg                         nub_add,nub_rst;
 wire                        nub_eq_in;
-wire                        nub_eq_fifo_out;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -120,7 +119,6 @@ assign length_eq_zero = length_reg == 0;
 
 assign tx_valid         = data_in_tx == NUB; 
 assign nub_eq_in        = nub_in == nub_reg;
-assign nub_eq_fifo_out  = (nub_reg == fifo_out_nub) & !fifo_empty;
 
 localparam IDLE =   1'b0;
 localparam RUN  =   1'b1;
@@ -139,8 +137,8 @@ reg done;
 always @(*)begin
 
     state_n             = state;
-    fifo_wr_en          = 1'b0;
-    fifo_rd_en          = 1'b0;
+    list_wr_en          = 1'b0;
+    list_rd_en          = 1'b0;
     out_sel             = 1'b0;
     nub_add             = 1'b0;
     nub_rst             = 1'b0;
@@ -164,7 +162,8 @@ always @(*)begin
                             nub_add = 1;
                         end
                         else begin
-                            fifo_wr_en = 1;
+                            list_wr_en = 1;
+                            out_sel = 1'b1;
                         end
 
                     end
@@ -187,16 +186,16 @@ always @(*)begin
                         if(tx_valid)begin
 
 
-                            case({nub_eq_in,nub_eq_fifo_out})
+                            case({nub_eq_in,nub_eq_list_out})
                                 2'b00:begin
                                     out_sel = 1'b1;
-                                    fifo_wr_en = 1'b1;
+                                    list_wr_en = 1'b1;
                                 end
                                 2'b01:begin
                                     out_sel = 1'b1;
                                     length_reg_minus = 1'b1;
-                                    fifo_wr_en = 1'b1;
-                                    fifo_rd_en = 1'b1;
+                                    list_wr_en = 1'b1;
+                                    list_rd_en = 1'b1;
                                     nub_add = 1'b1;
                                     out_valid = 1'b1;
                                 end
@@ -208,8 +207,8 @@ always @(*)begin
                                 2'b11:begin
                                     out_sel = 1'b1;
                                     length_reg_minus = 1'b1;
-                                    fifo_wr_en = 1'b1;
-                                    fifo_rd_en = 1'b1;
+                                    list_wr_en = 1'b1;
+                                    list_rd_en = 1'b1;
                                     nub_add = 1'b1;
                                     out_valid = 1'b1;
                                 end
@@ -223,10 +222,10 @@ always @(*)begin
                     end
                     else begin
 
-                        if(nub_eq_fifo_out)begin
+                        if(nub_eq_list_out)begin
                             out_sel = 1'b1;
                             length_reg_minus = 1'b1;
-                            fifo_rd_en = 1'b1;
+                            list_rd_en = 1'b1;
                             nub_add = 1'b1;
                             out_valid = 1'b1;
                         end

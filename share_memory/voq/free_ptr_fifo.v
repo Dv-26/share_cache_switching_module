@@ -51,7 +51,7 @@ wire wr_en;
 integer i;
 
 initial begin
-    for(i=0;i<2**WIDTH;i=i+1)begin
+    for(i=0;i<DEPTH;i=i+1)begin
         array_reg[i] = i;
     end
 end
@@ -84,8 +84,15 @@ end
 
 always @(*) begin
 
-    w_prt_succ = w_prt_reg + 1;
-    r_prt_succ = r_prt_reg + 1;
+    if(w_prt_reg < DEPTH-1)
+        w_prt_succ = w_prt_reg + 1;
+    else
+        w_prt_succ = 0;
+
+    if(r_prt_reg < DEPTH-1)
+        r_prt_succ = r_prt_reg + 1;
+    else
+        r_prt_succ = 0;
 
     w_prt_n = w_prt_reg;
     r_prt_n = r_prt_reg;
