@@ -1,5 +1,5 @@
 //端口�?
-`define PORT_NUB_TOTAL 4
+`define PORT_NUB_TOTAL 16
 //数据位宽
 `define DATA_WIDTH 32
 //SRAM深度

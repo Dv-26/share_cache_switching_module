@@ -6,6 +6,7 @@ module in_rd_controller_fsm
     input   wire                        rst_n,
     input   wire                        start,
     input   wire    [WIDTH_SEL-1 : 0]   rx_in,
+    input   wire                        error_in,
     input   wire    [WIDTH_LENGTH-1:0]  data_length,
     input   wire                        ready_in,                
 
@@ -27,14 +28,19 @@ localparam  RD      = 3'b010;
 localparam  DONE    = 3'b111;
 
 reg [WIDTH_LENGTH-1 : 0]    data_length_reg;
+reg                         error_reg;
 wire                        cnt_eq_length;
 
 always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)
+    if(!rst_n)begin
         data_length_reg <= 0;
+        error_reg <= 0;
+    end
     else begin
-        if(data_length_reg_load)
+        if(data_length_reg_load)begin
             data_length_reg  <= data_length;
+            error_reg <= error_in;
+        end
     end
 end
 
@@ -103,12 +109,14 @@ always @(*)begin
                 state_n = LOAD;
         end
         LOAD:begin
-            out_valid = 1'b1;
+            if(!error_reg)
+                out_valid = 1'b1;
             out_sel = 1'b1;
             state_n = RD;
         end
         RD:begin
-            out_valid = 1'b1;
+            if(!error_reg)
+                out_valid = 1'b1;
             cnt_add = 1'b1;
             if(cnt_eq_length)begin
                 state_n = DONE;

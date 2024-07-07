@@ -65,7 +65,7 @@ top_nxn top_tb
     .ready(top_ready)
 );
 
-wire    [9:0]   tx_cnt,rx_cnt;
+wire    [10:0]   tx_cnt,rx_cnt;
 cnt tx_package_cnt
 (
     .clk(clk),
@@ -215,8 +215,8 @@ initial
 begin
     init();
     wada();
-    #(15*CLK_TIME)
-    for(times = 0; times<300; times=times+1)begin
+    #(50*CLK_TIME)
+    for(times = 0; times<30; times=times+1)begin
         wait(|send_ready)
             random_send();
             #((500)*CLK_TIME);
@@ -237,7 +237,7 @@ module cnt
     input   wire                            rst_n,
 
     input   wire    [PORT_NUB_TOTAL-1 : 0]  in,
-    output  wire    [9:0]                   cnt_out
+    output  wire    [10:0]                  cnt_out
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
@@ -245,7 +245,7 @@ localparam  WIDTH_SEL           =   $clog2(PORT_NUB_TOTAL);
 
 wire    [PORT_NUB_TOTAL-1 : 0]  rise;
 reg     [WIDTH_SEL-1 : 0]       sum;
-reg     [9:0]   cnt;
+reg     [10:0]   cnt;
 
 generate
 

@@ -23,7 +23,7 @@ module in_module
 
 localparam  WIDTH_LENGTH    =   $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_PRIORITY  =   $clog2(`PRIORITY);
-localparam  WIDTH_HAND      =   16+WIDTH_LENGTH+WIDTH_PRIORITY+WIDTH_SEL;   
+localparam  WIDTH_HAND      =   16+WIDTH_LENGTH+WIDTH_PRIORITY+WIDTH_SEL+1;   
 localparam  DATA_WIDTH      =   `DATA_WIDTH;
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 
@@ -43,7 +43,7 @@ crc16_32bit crc
 
 wire    [DATA_WIDTH-1 : 0]  fifo_rd_data;
 wire                        fifo_rd_en;
-wire                        fifo_rst_n;
+wire                        error;
 
 dc_fifo 
 #(
@@ -52,7 +52,7 @@ dc_fifo
 )
 dc_fifo
 (
-    .rst_n(fifo_rst_n),
+    .rst_n(rst_n),
     .wr_clk(external_clk),
     .wr_data(wr_data),
     .wr_en(wr_en),
@@ -76,7 +76,7 @@ in_wr_controller_fsm wr_controller
     .valid(wr_vld),
     .ctrl_data_in(wr_data),
     .wr_en(wr_en),
-    .fifo_rst_n(fifo_rst_n),
+    .error_out(error),
     .crc_rst_n(crc_rst_n),
     .done(wr_done),
     .ready(wr_control_ready),
@@ -94,6 +94,7 @@ wire    [15 : 0]                    out_crc;
 
 wire    [WIDTH_HAND-1 : 0]          handshake_in;
 wire    [WIDTH_HAND-1 : 0]          handshake_out;
+wire                                error_out;
 wire                                rx_valid,rx_ready;
 
 cdc_handshake 
@@ -117,8 +118,8 @@ assign  in_dest         = ctrl_data_reg[WIDTH_LENGTH+WIDTH_PRIORITY+WIDTH_SEL-1 
 assign  in_priority     = ctrl_data_reg[WIDTH_LENGTH+WIDTH_PRIORITY-1 : WIDTH_LENGTH];
 assign  in_data_length  = ctrl_data_reg[WIDTH_LENGTH-1 : 0];
 
-assign  handshake_in    = {crc_out,in_dest,in_priority,in_data_length};
-assign  {out_crc,out_dest,out_priority,out_data_length} = handshake_out;
+assign  handshake_in    = {error,crc_out,in_dest,in_priority,in_data_length};
+assign  {error_out,out_crc,out_dest,out_priority,out_data_length} = handshake_out;
 
 wire    [DATA_WIDTH-1 : 0]          ctrl_data_out;
 wire    [WIDTH_SEL-1 : 0]   rd_control_rx_in;
@@ -131,6 +132,7 @@ in_rd_controller_fsm rd_control
     .rst_n(rst_n),
     .start(rx_valid),
     .rx_in(out_dest),
+    .error_in(error_out),
     .data_length(out_data_length),
     .rx_out(rx),
     .fifo_rd_en(fifo_rd_en),

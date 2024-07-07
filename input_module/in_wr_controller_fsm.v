@@ -11,7 +11,7 @@ module in_wr_controller_fsm
     input   wire    [DATA_WIDTH-1 : 0]  ctrl_data_in,
 
     output  reg                         wr_en,
-    output  wire                        fifo_rst_n,
+    output  reg                         error_out,
     output  wire                        crc_rst_n,
     output  reg     [DATA_WIDTH-1 : 0]  ctrl_data_reg,
 
@@ -79,6 +79,7 @@ always @(*)begin
     done = 1'b0;
     crc_rst = 1'b0;
     wr_en = 1'b0;
+    error_out = 0;
     case(state)
         IDLE:begin
             if(sop)
@@ -109,6 +110,7 @@ always @(*)begin
             end
         end
         ERROR:begin
+            error_out = 1;
             crc_rst = 1;
             cnt_rst = 1;
             state_n = IDLE;
@@ -116,8 +118,6 @@ always @(*)begin
     endcase
 end
 
-assign  error = state == ERROR;
-assign  fifo_rst_n = rst_n & !error;
 assign  crc_rst_n   = rst_n & !crc_rst;
 
 endmodule

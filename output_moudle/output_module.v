@@ -16,10 +16,10 @@ module output_module
     output  reg                                 rd_done,
 
     input   wire                                ready_in,
-    output  wire                                rd_sop,
-    output  wire                                rd_eop,
-    output  wire                                rd_vld,
-    output  wire    [DATA_WIDTH-1 : 0]          rd_data
+    output  reg                                 rd_sop,
+    output  reg                                 rd_eop,
+    output  reg                                 rd_vld,
+    output  reg     [DATA_WIDTH-1 : 0]          rd_data
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
@@ -164,14 +164,14 @@ always @(posedge internal_clk or negedge rst_n)begin
     if(!rst_n)begin
         state <= SCAN;
         fifo_wr_en <= 0;
-        fifo_rst_f <= 0;
     end
     else begin
         state <= state_n;
         fifo_wr_en <= fifo_wr_en_n;
-        fifo_rst_f <= fifo_rst;
     end
 end
+
+reg error_in;
 
 always @(*)begin
     state_n = state;
@@ -183,11 +183,11 @@ always @(*)begin
     compare_reg_load = 0;
     length_add = 0;
     fifo_wr_en_n = 0;
-    fifo_rst = 0;
     length_zero = 0;
     tx_valid = 0;
     rd_done = 0;
     crc_rst = 0;
+    error_in = 0;
     case(state)
         SCAN:begin
             if(ctrl_data_empty[times_cnt])begin
@@ -226,32 +226,43 @@ always @(*)begin
         end
         RD_DONE:begin
             rd_sel = compare_reg;
-            rd_done = 1;
             length_zero = 1;
-            crc_rst = 1;
-            if(verify)begin
-                state_n = WAIT;
-            end
-            else begin
-                fifo_rst = 1;
-                state_n = SCAN;
-                ctrl_data_rst[compare_reg] = 1;
-            end
-        end
-        WAIT:begin
+
             tx_valid = 1;
+
+            if(!verify)
+                error_in = 1;
+
             if(tx_ready)begin
+                rd_done = 1;
                 state_n = SCAN;
+                crc_rst = 1;
                 ctrl_data_rst[compare_reg] = 1;
             end
+            
+            // crc_rst = 1;
+            // if(verify)begin
+            //     state_n = WAIT;
+            // end
+            // else begin
+            //     // fifo_rst = 1;
+            //     state_n = SCAN;
+            //     ctrl_data_rst[compare_reg] = 1;
+            // end
         end
+        // WAIT:begin
+        //     tx_valid = 1;
+        //     if(tx_ready)begin
+        //         state_n = SCAN;
+        //         ctrl_data_rst[compare_reg] = 1;
+        //     end
+        // end
     endcase
 end
 
 //--------------------------------------------------------------
 
-reg     fifo_wr_en,fifo_rst,fifo_rst_f;
-wire    fifo_rst_n;
+reg     fifo_wr_en;
 wire    [DATA_WIDTH-1 : 0]  fifo_rd_data;
 wire    fifo_rd_en;
 
@@ -262,7 +273,7 @@ dc_fifo
 )
 dc_fifo
 (
-    .rst_n(fifo_rst_n),
+    .rst_n(rst_n),
     .wr_clk(internal_clk),
     .wr_data(port_in),
     .wr_en(fifo_wr_en),
@@ -271,19 +282,19 @@ dc_fifo
     .rd_en(fifo_rd_en)
 );
 
-assign fifo_rst_n = rst_n && ~fifo_rst_f;
 
 reg     tx_valid;
 wire    tx_ready,rx_valid,rx_ready;
 
-wire    [WIDTH_PRIORITY+WIDTH_LENGTH-1 : 0] handshake_out,handshake_in; 
-reg     [WIDTH_PRIORITY+WIDTH_LENGTH-1 : 0] handshake_out_reg;
+wire    [WIDTH_PRIORITY+WIDTH_LENGTH : 0] handshake_out,handshake_in; 
+reg     [WIDTH_PRIORITY+WIDTH_LENGTH : 0] handshake_out_reg;
 wire    [WIDTH_PRIORITY-1 : 0]  priority_out;
 wire    [WIDTH_LENGTH-1 : 0]    package_length_out;
+wire                            error_out;
 
 cdc_handshake 
 #(
-    .DATA_WIDTH(WIDTH_PRIORITY+WIDTH_LENGTH)
+    .DATA_WIDTH(WIDTH_PRIORITY+WIDTH_LENGTH+1)
 )
 cdc_handshake
 (
@@ -298,14 +309,15 @@ cdc_handshake
     .data_out(handshake_out)
 );
 
-assign handshake_in = {priority[compare_reg], package_length[compare_reg]};
-assign {priority_out, package_length_out} = handshake_out;
+assign handshake_in = {error_in, priority[compare_reg], package_length[compare_reg]};
+assign {error_out, priority_out, package_length_out} = handshake_out;
 
 //--------------------------------external_clk_domain--------------------------
 
 wire out_sel;
-assign rd_data = (out_sel)? {NUB, priority_reg, package_length_reg}:fifo_rd_data;
 
+
+reg                             error_reg;
 reg     [WIDTH_PRIORITY-1 : 0]  priority_reg;
 reg     [WIDTH_LENGTH-1 : 0]    package_length_reg;
 
@@ -315,14 +327,18 @@ always @(posedge external_clk or negedge rst_n)begin
     if(!rst_n)begin
         priority_reg <= 0;
         package_length_reg <= 0;
+        error_reg <= 0;
     end
     else begin
         if(reg_load)begin
+            error_reg <= error_out;
             priority_reg <= priority_out;
             package_length_reg <= package_length_out; 
         end
     end
 end
+
+wire    rd_sop_n,rd_eop_n,rd_vld_n;
 
 out_rd_controller out_rd_controller
 (
@@ -334,10 +350,31 @@ out_rd_controller out_rd_controller
     .load(reg_load),
     .fifo_rd_en(fifo_rd_en),
     .length_in(package_length_reg),
-    .rd_sop(rd_sop),
-    .rd_eop(rd_eop),
-    .rd_vld(rd_vld),
+    .rd_sop(rd_sop_n),
+    .rd_eop(rd_eop_n),
+    .rd_vld(rd_vld_n),
     .out_sel(out_sel)
 );
+
+always @(posedge external_clk or negedge rst_n)begin
+    if(!rst_n)begin
+        rd_data <= 0;
+        rd_sop <= 0;
+        rd_eop <= 0;
+        rd_vld <= 0;
+    end
+    else begin
+        rd_sop <= rd_sop_n && ~error_out;
+        rd_eop <= rd_eop_n && ~error_reg;
+        rd_vld <= rd_vld_n && ~error_reg;
+
+        if(out_sel)
+            rd_data <= {NUB, priority_reg, package_length_reg};
+        else if(rd_vld_n && ~error_reg)
+            rd_data <= fifo_rd_data;
+        else
+            rd_data <= 0;
+    end
+end
 
 endmodule
