@@ -44,8 +44,6 @@ wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_sop;
 wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_eop;          
 wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_vld;          
 wire      [DATA_WIDTH_TOTAL-1 : 0]            top_rd_data;
-reg       [PORT_NUB_TOTAL-1 : 0]              top_qos_controll;
-wire      [PORT_NUB_TOTAL-1 : 0]              top_error;
 wire                                          top_full;
 wire                                          top_alm_ost_full;
 reg       [PORT_NUB_TOTAL-1 : 0]              top_ready;
@@ -63,8 +61,6 @@ top_nxn top_tb
     .rd_eop(top_rd_eop),          
     .rd_vld(top_rd_vld),          
     .rd_data(top_rd_data),
-    .qos_controll(top_qos_controll),
-    .error(top_error),
     .full(top_full),
     .alm_ost_full(top_alm_ost_full),
     .ready(top_ready)
