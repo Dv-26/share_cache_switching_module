@@ -98,6 +98,7 @@ always @(*)begin
                 state_n = DONE;
         end
         DONE:begin
+            if(!start)
             state_n = IDLE;
             wr_eop  = 1;
             cnt_rst = 1;

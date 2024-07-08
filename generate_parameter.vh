@@ -3,7 +3,7 @@
 //数据位宽
 `define DATA_WIDTH 32
 //SRAM深度
-`define DEPTH   8000
+`define DEPTH   256
 //�?大包�?
 `define DATA_LENGTH_MAX   256
 //优先级数�?

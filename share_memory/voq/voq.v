@@ -103,7 +103,8 @@ ram
 )
 sram
 (
-    .clk(clk),
+    .wr_clk(clk),
+    .rd_clk(clk),
     .wr_en(sdram_wr_en),
     .wr_addr(sdram_wr_addr),
     .wr_data(wr_data),

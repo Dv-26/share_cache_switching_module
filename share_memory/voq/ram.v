@@ -27,7 +27,8 @@ module ram
     parameter   DATA_WIDTH  =   8
 )
 (
-    input   wire                        clk,
+    input   wire                        wr_clk,
+    input   wire                        rd_clk,
 
     input   wire                        wr_en,
     input   wire    [ADDR_WIDTH - 1:0]  wr_addr,
@@ -44,15 +45,15 @@ localparam  DEPTH = 2**ADDR_WIDTH;
 
 integer effectiove_space = DEPTH;
 integer percentage       = 100;
-always @(posedge clk)begin
-    case({wr_en,rd_en})
-        2'b01:begin
-            effectiove_space = effectiove_space + 1;
-        end
-        2'b10:begin
-            effectiove_space = effectiove_space - 1;
-        end
-    endcase
+
+always @(posedge wr_clk)begin
+    if(wr_en & !rd_en)
+        effectiove_space = effectiove_space + 1;
+end
+
+always @(posedge rd_clk)begin
+    if(!wr_en & rd_en)
+        effectiove_space = effectiove_space - 1;
 end
 
 always begin
@@ -62,12 +63,12 @@ always begin
 end
 
 
-always @(posedge clk ) begin
+always @(posedge wr_clk) begin
     if(wr_en)
         ram[wr_addr] <= wr_data;
 end
 
-always @(posedge clk)begin
+always @(posedge rd_clk)begin
     if(rd_en)
         rd_data <= ram[rd_addr];
 end
