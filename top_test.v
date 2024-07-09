@@ -89,7 +89,7 @@ generate
     genvar i;
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: link
 
-        wire                            start;
+        (* MARK_DEBUG="true" *) wire                            start;
         wire                            done;
         wire                            ready;
         wire    [WIDTH_SEL-1 : 0]       dest;

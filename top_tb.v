@@ -6,19 +6,34 @@ module top_tb();
 localparam  CLK_TIME = 8;
 localparam  INTERNAL_CLK_TIME = 4;
 
-reg clk, internal_clk, rst_n;
+reg clk,rst_n;
 
 always #(CLK_TIME/2) clk = !clk;
-always #(INTERNAL_CLK_TIME/2) internal_clk = !internal_clk;
 
 initial 
 begin
     clk = 1;
-    internal_clk = 1;
     rst_n = 0;
     #(10*CLK_TIME) 
     rst_n = 1;
 end
+
+wire    external_clk,internal_clk;
+wire    sys_rst_n;
+
+clk_wiz_0 clk_generate
+(
+    // Clock out ports
+    .clk_out1(external_clk),    // output clk_out1 100Mhz
+    .clk_out2(internal_clk),    // output clk_out2 50Mhz
+    // Status and control signals
+    .reset(~rst_n),         // input reset
+    .locked(locked),        // output locked
+    // Clock in ports
+    .clk_in1(clk)           // input clk_in1
+);      
+
+assign sys_rst_n = rst_n & locked;
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
 localparam  DATA_WIDTH          =   `DATA_WIDTH;
@@ -50,9 +65,9 @@ reg       [PORT_NUB_TOTAL-1 : 0]              top_ready;
 
 top_nxn top_tb
 (
-    .external_clk(clk),
+    .external_clk(external_clk),
     .internal_clk(internal_clk),
-    .rst_n(rst_n),
+    .rst_n(sys_rst_n),
     .wr_sop(top_wr_sop),          
     .wr_eop(top_wr_eop),          
     .wr_vld(top_wr_vld),          
@@ -69,15 +84,15 @@ top_nxn top_tb
 wire    [10:0]   tx_cnt,rx_cnt;
 cnt tx_package_cnt
 (
-    .clk(clk),
-    .rst_n(rst_n),
+    .clk(external_clk),
+    .rst_n(sys_rst_n),
     .in(top_wr_sop),
     .cnt_out(tx_cnt)
 );
 cnt rx_package_cnt
 (
-    .clk(clk),
-    .rst_n(rst_n),
+    .clk(external_clk),
+    .rst_n(sys_rst_n),
     .in(top_rd_sop),
     .cnt_out(rx_cnt)
 );
@@ -111,8 +126,8 @@ generate
         )
         send_module
         (
-            .clk(clk),
-            .rst_n(rst_n),
+            .clk(external_clk),
+            .rst_n(sys_rst_n),
             .start(start),
             .ready(ready),
             .done(done),
@@ -153,7 +168,6 @@ task init;
     integer i;
     begin
         for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin
-            top_qos_controll[i] = 0;
             top_ready[i] = 0;
             send_start[i] = 0;
             send_dest[i] = 0;
