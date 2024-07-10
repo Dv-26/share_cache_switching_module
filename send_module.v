@@ -1,4 +1,4 @@
-`include "../generate_parameter.vh"
+`include "./generate_parameter.vh"
 
 module send_module
 #(
