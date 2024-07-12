@@ -38,6 +38,8 @@ reg                         list_wr_en;
 reg                         list_rd_en;
 wire                        list_full;
 wire                        list_empty;
+wire                        list_full_total;
+wire                        list_empty_total;
 wire    [WIDTH_LIST-1 : 0]  list_data_in;
 wire    [WIDTH_LIST-1 : 0]  list_data_out;
 wire                        nub_eq_list_out;
@@ -46,28 +48,30 @@ reg_list
 #(
     .DEPTH(2*PORT_NUB),
     .DATA_WIDTH(WIDTH_LIST),
-    .INDEX_WIDTH(WIDTH_SEL)
+    .NUB(PORT_NUB)
 )
 reg_list
 (
     .clk            (clk),
     .rst_n          (rst_n),
-    .index_in       (nub_in),
+    .wr_sel         (nub_in),
     .wr_data        (list_data_in),
     .wr_en          (list_wr_en),
-    .search_in      (nub_reg),
+    .rd_sel         (nub_reg),
     .rd_data        (list_data_out),
     .rd_en          (list_rd_en),
-    .search_valid   (nub_eq_list_out),
     .full           (list_full),
-    .empty          (list_empty)
+    .empty          (list_empty),
+    .full_total     (list_full_total),
+    .empty_total    (list_empty_total)
 );
 
-assign list_data_in = (out_sel)? data_in:list_data_out;
+assign nub_eq_list_out  = ~list_empty;
+assign list_data_in     = (out_sel)? data_in:list_data_out;
 
-reg                         out_valid;
-reg     [WIDTH_LIST+WIDTH_SEL : 0]    out_reg;
-wire    [WIDTH_LIST+WIDTH_SEL : 0]    out_reg_n;
+reg                                     out_valid;
+reg     [WIDTH_LIST+WIDTH_SEL : 0]      out_reg;
+wire    [WIDTH_LIST+WIDTH_SEL : 0]      out_reg_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)

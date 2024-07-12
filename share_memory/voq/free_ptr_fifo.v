@@ -71,7 +71,7 @@ always @(posedge clk or negedge rst_n) begin
         r_prt_reg <= {WIDTH{1'b0}};
         full_reg  <= 1'b1;
         empty_reg <= 1'b0;
-        count_reg <= DEPTH;
+        count_reg <= DEPTH-1;
     end 
     else begin
         w_prt_reg <= w_prt_n;

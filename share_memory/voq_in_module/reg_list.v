@@ -3,106 +3,62 @@ module reg_list
 #(
     parameter   DEPTH       = 8,
     parameter   DATA_WIDTH  = 4,
-    parameter   INDEX_WIDTH = 4
+    parameter   NUB         = 4
 )
 (
     input   wire                            clk,
     input   wire                            rst_n,
 
-    input   wire    [INDEX_WIDTH-1 : 0]     index_in,
+    input   wire    [WIDTH_SEL-1 : 0]       wr_sel,
     input   wire    [DATA_WIDTH-1 : 0]      wr_data,
     input   wire                            wr_en,
-    input   wire    [INDEX_WIDTH-1 : 0]     search_in,
+    input   wire    [WIDTH_SEL-1 : 0]       rd_sel,
     output  wire    [DATA_WIDTH-1 : 0]      rd_data,
     input   wire                            rd_en,
-    output  wire                            search_valid,
     output  wire                            full,
-    output  wire                            empty
+    output  wire                            empty,
+    output  wire                            full_total,
+    output  wire                            empty_total
 );
 
-localparam  WIDTH_SEL = $clog2(DEPTH);
+localparam  WIDTH_SEL = $clog2(NUB);
 
-reg [INDEX_WIDTH-1 : 0] index_reg   [DEPTH-1 : 0];
-reg [DATA_WIDTH-1 : 0]  data_reg    [DEPTH-1 : 0];
-reg [DEPTH-1 : 0]       bitmap;
+wire    [DATA_WIDTH-1 : 0]  fifo_rd_data[NUB-1 : 0];
+wire    [NUB-1 : 0]         fifo_full,fifo_empty;
 
-reg     [WIDTH_SEL-1 : 0]   wr_sel;
-reg     [WIDTH_SEL-1 : 0]   rd_sel;
-
-integer n;
-always @(*)begin
-    wr_sel = 0;
-    rd_sel = 0;
-    for(n=DEPTH-1; n >= 0; n=n-1)begin
-        if(!bitmap[n])
-            wr_sel = n;
-        if(search_bitmap[n])
-            rd_sel = n;
-    end
-end
-
-assign rd_data = data_reg[rd_sel];
-
-assign full     = &bitmap;
-assign empty    = ~|bitmap;  
-
-wire    [DEPTH-1 : 0]   search_bitmap;
+assign  full        = fifo_full[wr_sel];
+assign  empty       = fifo_empty[rd_sel];
+assign  rd_data     = fifo_rd_data[rd_sel];
+assign  full_total  = &fifo_full;
+assign  empty_total = &fifo_empty;
 
 generate
     genvar i;
-    for(i=0; i<DEPTH; i=i+1)begin: loop
+    for(i=0; i<NUB; i=i+1)begin
 
-        wire    wr,rd;
-        reg [INDEX_WIDTH-1 : 0] index_reg_n;
-        reg [DATA_WIDTH-1 : 0]  data_reg_n;
-        reg                     bitmap_n;
-        
-        assign wr = wr_en && wr_sel == i;
-        assign rd = rd_en && rd_sel == i;
+        wire    fifo_wr_en,fifo_rd_en;
 
-        always @(posedge clk or negedge rst_n)begin
-            if(!rst_n)begin
-                bitmap[i] <= 0;
-                index_reg[i] <= 0;
-                data_reg[i] <= 0;
-            end
-            else begin
-                index_reg[i] <= index_reg_n;
-                data_reg[i] <= data_reg_n;
-                bitmap[i] <= bitmap_n;
-            end
-        end
+        reg_fifo
+        #(
+            .DATA_WIDTH(DATA_WIDTH),
+            .DEPTH(DEPTH)
+        )
+        reg_fifo
+        (
+            .clk        (clk),
+            .rst_n      (rst_n),
+            .wr_en      (fifo_wr_en),
+            .wr_data    (wr_data),
+            .rd_en      (fifo_rd_en),
+            .rd_data    (fifo_rd_data[i]),
+            .full       (fifo_full[i]),
+            .empty      (fifo_empty[i])
+        );
 
-        always @(*)begin
-            index_reg_n = index_reg[i];
-            data_reg_n = data_reg[i];
-            bitmap_n = bitmap[i];
+        assign fifo_wr_en = (wr_sel == i)? wr_en:0;
+        assign fifo_rd_en = (rd_sel == i)? rd_en:0;
 
-            case({wr, rd})
-                2'b01:begin
-                    bitmap_n = 0;
-                    data_reg_n = 0;
-                    index_reg_n = 0;
-                end
-                2'b10:begin
-                    bitmap_n = 1;
-                    data_reg_n = wr_data;
-                    index_reg_n = index_in;
-                end
-                2'b11:begin
-                    bitmap_n = 1;
-                    data_reg_n = wr_data;
-                    index_reg_n = index_in;
-                end
-            endcase
-        end
-
-        assign search_bitmap[i] = bitmap[i] && (search_in == index_reg[i]);
     end
 endgenerate
-
-assign search_valid = |search_bitmap;
-
-
 
 endmodule
