@@ -97,7 +97,9 @@ cnt rx_package_cnt
     .cnt_out(rx_cnt)
 );
 
+reg                             send_single[PORT_NUB_TOTAL-1 : 0];
 reg                             send_start[PORT_NUB_TOTAL-1 : 0];
+reg     [19 : 0]                send_cycle[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_SEL-1 : 0]       send_dest[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_PRIORITY-1 : 0]  send_priority[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_LENGTH-1 : 0]    send_length[PORT_NUB_TOTAL-1 : 0];
@@ -108,17 +110,15 @@ generate
     genvar i;
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: layout
 
-        wire                            start;
-        wire                            done;
-        wire                            ready;
-        wire    [WIDTH_SEL-1 : 0]       dest;
-        wire    [WIDTH_PRIORITY-1 : 0]  priority;
-        wire    [WIDTH_LENGTH-1 : 0]    length;
-
         wire                            wr_sop;
         wire                            wr_eop;
         wire                            wr_vld;
         wire    [DATA_WIDTH-1 : 0]      wr_data;
+
+        wire                            rd_sop;
+        wire                            rd_eop;
+        wire                            rd_vld;
+        wire    [DATA_WIDTH-1 : 0]      rd_data;
 
         send_module
         #(
@@ -128,33 +128,25 @@ generate
         (
             .clk(external_clk),
             .rst_n(sys_rst_n),
-            .start(start),
-            .ready(ready),
-            .done(done),
-            .dest(dest),
-            .priority(priority),
-            .length(length),
+            .start(send_start[i]),
+            .ready(send_ready[i]),
+            .single(send_single[i]),
+            .send_cycle(send_cycle[i]),
+            .done(send_done[i]),
+            .dest(send_dest[i]),
+            .priority(send_priority[i]),
+            .length(send_length[i]),
             .wr_sop(wr_sop),
             .wr_eop(wr_eop),
             .wr_vld(wr_vld),
             .wr_data(wr_data)
         );
 
-        assign start = send_start[i];
-        assign send_done[i] = done;
-        assign send_ready[i] = ready;
-        assign dest = send_dest[i];
-        assign priority = send_priority[i];
-        assign length = send_length[i];
         assign top_wr_sop[i] = wr_sop;
         assign top_wr_eop[i] = wr_eop;
         assign top_wr_vld[i] = wr_vld;
         assign top_wr_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH] = wr_data;
 
-        wire                            rd_sop;
-        wire                            rd_eop;
-        wire                            rd_vld;
-        wire    [DATA_WIDTH-1 : 0]      rd_data;
 
         assign rd_sop = top_rd_sop[i];
         assign rd_eop = top_rd_eop[i];
@@ -173,6 +165,8 @@ task init;
             send_dest[i] = 0;
             send_priority[i] = 0;
             send_length[i] = 0;
+            send_single[i] = 1;
+            send_cycle[i] = 0;
         end
     end
 endtask
