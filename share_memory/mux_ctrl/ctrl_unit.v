@@ -13,7 +13,9 @@ module ctrl_unit
     output  wire    [WIDTH_COUNT-1 : 0]     shift_out,
     input   wire    [WIDTH_COUNT-1 : 0]     shift_in,
 
-    input   wire                            voq_full_in,
+    input   wire                            voq1_full_in,
+    output  wire                            voq1_wr_en,
+    input   wire    [PORT_NUB_TOTAL-1 : 0]  voq0_empty_in,
     output  wire    [PORT_NUB_TOTAL-1 : 0]  en_out
 );
 
@@ -25,38 +27,59 @@ localparam  RUN     = 1'b1;
 
 reg     state,state_n;
 wire    stop2run,run2stop;
+reg     wr_en;
 
 always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)
+    if(!rst_n)begin
         state <= STOP;
-    else
+        wr_en <= 0;
+    end
+    else begin
         state <= state_n;
+        wr_en <= wr_en_n;
+    end
 end
 
+assign voq1_wr_en = wr_en;
+
+wire    empty;
+assign empty = voq0_empty_in[cnt];
+
+reg wr_en_n,cnt_load;
+
 always@(*)begin
+    wr_en_n = 0;
+    cnt_load = 0;
     state_n = state;
     case(state)
         STOP:begin
-            if(stop2run)
+            if(stop2run)begin
                 state_n = RUN;
+            end
         end
         RUN:begin
-            if(run2stop)
+            cnt_load = 1;
+            if(!empty)
+                wr_en_n = 1;
+            if(run2stop)begin
                 state_n = STOP;
+                wr_en_n = 0;
+            end
         end
     endcase
 end
 
-assign  stop2run = !voq_full_in && shift_reg == cnt;
-assign  run2stop = voq_full_in;
+assign  stop2run = !voq1_full_in && shift_reg == cnt;
+assign  run2stop = voq1_full_in;
 
+reg                     cnt_load;
 reg [WIDTH_COUNT-1 : 0] cnt;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
         cnt <= {WIDTH_COUNT{1'b0}};
     else 
-        if(state == RUN)
+        if(cnt_load)
             cnt <= shift_reg;
 end
 
@@ -73,12 +96,13 @@ end
 
 assign shift_out = shift_reg;
 
+
 generate
     genvar i;
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: loop
         assign en_out[i] =  (state != RUN)? 1'b0:
-                            (cnt == i)? !voq_full_in:
-                                        1'b0;
+                            (cnt == i)?     !voq1_full_in:
+                                            1'b0;
     end
 endgenerate
 

@@ -106,6 +106,7 @@ reg     [WIDTH_LENGTH-1 : 0]    length_reg;
 reg                             length_reg_minus,length_reg_load;
 wire                            length_eq_zero;
 wire    [WIDTH_LENGTH-1 : 0]    data_length_in;
+reg                             length_sel;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -118,7 +119,7 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
-assign data_length_in = data_in[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY];
+assign data_length_in = (nub_eq_list_out)? list_data_out[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY]:data_in[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY];
 assign length_eq_zero = length_reg == 0;
 
 assign tx_valid         = data_in_tx == NUB; 
@@ -156,73 +157,105 @@ always @(*)begin
         case(state)
             IDLE:begin
                 if(valid_in)begin
-
                     if(tx_valid)begin
-
-                        if(nub_eq_in)begin
+                        if(nub_eq_list_out)begin
                             state_n = RUN;
                             length_reg_load = 1;
                             out_valid = 1;
+                            list_rd_en = 1;
+                            list_wr_en = 1;
                             nub_add = 1;
+                            out_sel = 1;
                         end
                         else begin
-                            list_wr_en = 1;
-                            out_sel = 1'b1;
+                            if(nub_eq_in)begin
+                                state_n = RUN;
+                                length_reg_load = 1;
+                                out_valid = 1;
+                                nub_add = 1;
+                            end
+                            else begin
+                                list_wr_en = 1;
+                                out_sel = 1;
+                            end
                         end
-
                     end
                     else
                         out_valid = 1;
                 end
+                else begin
+                    if(nub_eq_list_out)begin
+                        state_n = RUN;
+                        length_reg_load = 1;
+                        list_rd_en = 1;
+                        out_sel = 1;
+                        out_valid = 1;
+                        nub_add = 1;
+                    end
+                end
             end
             RUN:begin
+
                 if(length_eq_zero)begin
                     state_n = IDLE;
                     nub_rst = 1;
                     done = 1;
-                    if(valid_in)
-                        out_valid = 1;
+                    if(valid_in)begin
+                        if(tx_valid)begin
+                            out_sel = 1;
+                            list_wr_en = 1;
+                        end
+                        else
+                            out_valid = 1;
+                    end
                 end
                 else begin
 
                     if(valid_in)begin
-
                         if(tx_valid)begin
-
-
-                            case({nub_eq_in,nub_eq_list_out})
-                                2'b00:begin
-                                    out_sel = 1'b1;
-                                    list_wr_en = 1'b1;
-                                end
-                                2'b01:begin
-                                    out_sel = 1'b1;
-                                    length_reg_minus = 1'b1;
-                                    list_wr_en = 1'b1;
-                                    list_rd_en = 1'b1;
-                                    nub_add = 1'b1;
-                                    out_valid = 1'b1;
-                                end
-                                2'b10:begin
-                                    out_valid = 1'b1;
-                                    length_reg_minus = 1'b1;
-                                    nub_add = 1'b1;
-                                end
-                                2'b11:begin
-                                    out_sel = 1'b1;
-                                    length_reg_minus = 1'b1;
-                                    list_wr_en = 1'b1;
-                                    list_rd_en = 1'b1;
-                                    nub_add = 1'b1;
-                                    out_valid = 1'b1;
-                                end
-                            endcase
-
-
+                            if(nub_eq_list_out)begin
+                                out_sel = 1'b1;
+                                list_wr_en = 1'b1;
+                                length_reg_minus = 1'b1;
+                                list_rd_en = 1'b1;
+                                nub_add = 1'b1;
+                                out_valid = 1'b1;
+                            end
+                            else if(nub_eq_in)begin
+                                out_valid = 1'b1;
+                                length_reg_minus = 1'b1;
+                                nub_add = 1'b1;
+                            end
+                            else begin
+                                out_sel = 1'b1;
+                                list_wr_en = 1'b1;
+                            end
+                            // case({nub_eq_in,nub_eq_list_out})
+                            //     2'b00:begin
+                            //         out_sel = 1'b1;
+                            //         list_wr_en = 1'b1;
+                            //     end
+                            //     2'b01:begin
+                            //     end
+                            //     2'b10:begin
+                            //         out_valid = 1'b1;
+                            //         length_reg_minus = 1'b1;
+                            //         nub_add = 1'b1;
+                            //     end
+                            //     2'b11:begin
+                            //         out_sel = 1'b1;
+                            //         list_wr_en = 1'b1;
+                            //         if(!length_eq_zero)begin
+                            //             length_reg_minus = 1'b1;
+                            //             list_rd_en = 1'b1;
+                            //             nub_add = 1'b1;
+                            //             out_valid = 1'b1;
+                            //         end
+                            //     end
+                            // endcase
                         end
                         else
                             out_valid = 1'b1;
-
                     end
                     else begin
 
@@ -233,11 +266,10 @@ always @(*)begin
                             nub_add = 1'b1;
                             out_valid = 1'b1;
                         end
-
                     end
-
                 end
             end
+
         endcase
         
     end

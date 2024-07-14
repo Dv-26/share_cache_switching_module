@@ -10,7 +10,7 @@ module  mux_ctrl_1
     input   wire                            rst_n,
 
     output  wire    [PORT_NUB-1 : 0]        rd_out,
-    output  reg     [PORT_NUB-1 : 0]        wr_out,
+    output  wire    [PORT_NUB-1 : 0]        wr_out,
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] rd_sel,
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] mux_sel,
 
@@ -36,13 +36,10 @@ generate
 
     for(i=0; i<PORT_NUB; i=i+1)begin: loop0
 
-        wire    [WIDTH_SEL-1 : 0]   shift_out;
         wire    [WIDTH_SEL-1 : 0]   mux_sel_out;
-        wire    [WIDTH_SEL-1 : 0]   mux_sel_shift_out;
         reg     [WIDTH_SEL-1 : 0]   mux_sel_reg;
         wire    [WIDTH_SEL-1 : 0]   shift_in;
-        wire                        voq_full_in;
-        wire    [PORT_NUB-1 : 0]    en_out;
+        wire    [PORT_NUB-1 : 0]    voq0_empty_in;
         wire    [PORT_NUB-1 : 0]    en_shift_out;
 
         ctrl_unit #(.dest(i))
@@ -50,13 +47,15 @@ generate
         (
             .clk(clk),
             .rst_n(rst_n),
-            .shift_out(shift_out),
+            .shift_out(shift_count[i]),
             .shift_in(shift_in),
-            .voq_full_in(voq_full_in),
+            .voq1_full_in(full_in[i]),
+            .voq1_wr_en(wr_out[i]),
+            .voq0_empty_in(voq0_empty_in),
             .mux_sel_out(mux_sel_out),
-            .en_out(en_out)
+            .en_out(unit_en_out[i])
         );
-        
+
         if(i == PORT_NUB-1)
             assign shift_in = cnt_in;
         else
@@ -74,7 +73,7 @@ generate
                 .clk(clk),
                 .rst_n(rst_n),
                 .port_in(mux_sel_out), 
-                .port_out(mux_sel_shift_out)
+                .port_out(mux_sel_n[i])
             );
 
             shift_reg                       //流水线对齐
@@ -87,31 +86,29 @@ generate
             (
                 .clk(clk),
                 .rst_n(rst_n),
-                .port_in(en_out), 
-                .port_out(en_shift_out)
+                .port_in(unit_en_out[i]), 
+                .port_out(unit_en_out_shift[i])
             );
         end
         else begin
-            assign mux_sel_shift_out = mux_sel_out;
-            assign en_shift_out = en_out;
+            assign mux_sel_n[i] = mux_sel_out;
+            assign unit_en_out_shift[i] = unit_en_out[i];
         end
 
         always @(posedge clk)begin
-            mux_sel_reg <= mux_sel_shift_out;
+            mux_sel_reg <= mux_sel_n[i];
         end
 
-        assign  mux_sel_n[i]   =   mux_sel_shift_out;
-        assign  mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = mux_sel_reg;
-        assign  shift_count[i] = shift_out;
-        assign  voq_full_in = full_in[i];
-        assign  unit_en_out[i] = en_out;
-        assign  unit_en_out_shift[i] = en_shift_out;
-
         assign voq_empty[i] = empty_in[(i+1)*PORT_NUB-1 : i*PORT_NUB];
+        for(j=0; j<PORT_NUB; j=j+1)begin: loop01
+            assign  voq0_empty_in[j] = voq_empty[j][i];
+        end
+        assign  mux_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = mux_sel_reg;
 
     end
 
     for(i=0; i<PORT_NUB; i=i+1)begin: loop1
+
         wire                        mux[PORT_NUB-1 : 0];
         wire    [PORT_NUB-1 : 0]    encode_in;
         wire    [WIDTH_SEL-1 : 0]   sel;
@@ -141,13 +138,15 @@ generate
         assign rd_sel[(i+1)*WIDTH_SEL-1 : i*WIDTH_SEL] = sel;
         assign rd_out[i] = mux[sel];
 
-        always @(posedge clk or negedge rst_n)begin
-            if(!rst_n)
-                wr_out[i] <= 1'b0;
-            else
-                wr_out[i] <= rd_out[mux_sel_n[i]] & (!voq_empty[mux_sel_n[i]][i]);
-        end
+        // always @(posedge clk or negedge rst_n)begin
+        //     if(!rst_n)
+        //         wr_out[i] <= 1'b0;
+        //     else
+        //         wr_out[i] <= rd_out[mux_sel_n[i]] & (!voq_empty[mux_sel_n[i]][i]);
+        // end
+
     end
+
 endgenerate
 
 endmodule
