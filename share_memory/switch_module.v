@@ -300,7 +300,8 @@ generate
             .rd_data(voq_rd_data),
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
-            .full(voq_full),    //鍥犱负娴佹按绾夸細婊炲悗log2(N)涓椂閽熷懆鏈燂紝鎵?浠ユ弧淇″彿瑕佹彁鍓? 闃叉涓㈡暟鎹?
+            // .full(voq_full),    //鍥犱负娴佹按绾夸細婊炲悗log2(N)涓椂閽熷懆鏈燂紝鎵?浠ユ弧淇″彿瑕佹彁鍓? 闃叉涓㈡暟鎹?
+            .alm_ost_full(voq_full),
             .empty(voq_empty)
         );
 

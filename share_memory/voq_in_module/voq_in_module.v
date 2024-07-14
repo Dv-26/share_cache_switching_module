@@ -47,7 +47,7 @@ always @(posedge clk or negedge rst_n)begin
             nub_reg     <= nub;
             valid_reg   <= valid_in;
         end
-            full_reg    <= voq_full_in;
+        full_reg    <= voq_full_in;
     end
 end
 

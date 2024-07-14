@@ -35,6 +35,7 @@ module free_ptr_fifo
     output  wire    [WIDTH-1:0]     r_data,
 
     output  wire                    empty,
+    output  wire                    empty_next,
     output  wire                    full,
     output  wire    [WIDTH-1:0]     count
 );
@@ -131,5 +132,6 @@ end
 assign full = full_reg;
 assign empty = empty_reg;
 assign count = count_reg;
+assign empty_next = empty_reg_n;
 
 endmodule
