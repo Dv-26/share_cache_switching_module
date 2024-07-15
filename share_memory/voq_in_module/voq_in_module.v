@@ -30,30 +30,17 @@ wire    [PORT_NUB : 0]      port_valid;
 wire    [PORT_NUB-1 : 0]      done[PORT_NUB : 0];
 
 reg                         full_reg;
-reg     [WIDTH_PORT-1 : 0]  data_reg;
-reg     [WIDTH_SEL-1 : 0]   nub_reg;
-reg     [PORT_NUB : 0]      valid_reg;
 
 always @(posedge clk or negedge rst_n)begin
-    if(!rst_n)begin
-        data_reg    <= 0;
-        nub_reg     <= 0;
-        valid_reg   <= 0;
-        full_reg    <= 0;
-    end
-    else begin
-        if(!full_reg)begin
-            data_reg    <= data_in;
-            nub_reg     <= nub;
-            valid_reg   <= valid_in;
-        end
-        full_reg    <= voq_full_in;
-    end
+    if(!rst_n)
+        full_reg <= 0;
+    else
+        full_reg <= voq_full_in;
 end
 
-assign port_data[0] = data_reg;
-assign port_valid[0] = valid_reg;
-assign port_nub[0] = nub_reg;
+assign port_data[0] = data_in;
+assign port_valid[0] = valid_in;
+assign port_nub[0] = nub;
 
 assign data_out = port_data[PORT_NUB];
 assign valid_out = port_valid[PORT_NUB];

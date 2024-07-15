@@ -118,7 +118,7 @@ assign rd_vld_3 = top_rd_vld[3];
 (* MARK_DEBUG="true" *)wire                                          top_alm_ost_full;
 wire      [PORT_NUB-1 : 0]              top_ready;
 
-assign full = top_full;
+assign full = top_alm_ost_full;
 
 top_nxn top_test 
 (
