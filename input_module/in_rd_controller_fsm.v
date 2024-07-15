@@ -6,6 +6,7 @@ module in_rd_controller_fsm
     input   wire                        rst_n,
     input   wire                        start,
     input   wire    [WIDTH_SEL-1 : 0]   rx_in,
+    input   wire                        full_in,
     input   wire                        error_in,
     input   wire    [WIDTH_LENGTH-1:0]  data_length,
     input   wire                        ready_in,                
@@ -76,7 +77,7 @@ end
 
 assign rx_out = rx_reg;
 
-reg         data_length_reg_load,cnt_add,cnt_rst,rx_load,out_sel;
+reg         rd_en,data_length_reg_load,cnt_add,cnt_rst,rx_load,out_sel;
 reg [2:0]   state,state_n;
 
 always @(posedge clk or negedge rst_n)begin
@@ -88,6 +89,7 @@ end
 
 always @(*)begin
     state_n = state;
+    rd_en   = 1'b0;
     cnt_add = 1'b0;
     cnt_rst = 1'b0;
     rx_load = 1'b0;
@@ -97,7 +99,7 @@ always @(*)begin
     data_length_reg_load = 1'b0;
     case(state)
         IDLE:begin
-            if(start)begin
+            if(start && !full_in)begin
                 state_n = WAIT;
                 rx_load = 1'b1;
                 ready = 1'b1;
@@ -118,6 +120,7 @@ always @(*)begin
             if(!error_reg)
                 out_valid = 1'b1;
             cnt_add = 1'b1;
+            rd_en = 1'b1;
             if(cnt_eq_length)begin
                 state_n = DONE;
             end
@@ -129,6 +132,6 @@ always @(*)begin
     endcase
 end
 
-assign fifo_rd_en = state == RD;
+assign fifo_rd_en = rd_en;
 
 endmodule

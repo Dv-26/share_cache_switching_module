@@ -12,6 +12,7 @@ module in_module
     input   wire                            wr_sop,
     input   wire                            wr_eop,
     input   wire                            wr_vld,
+    input   wire                            full_in,
     input   wire                            ready_in,
     input   wire    [DATA_WIDTH-1 : 0]      wr_data,
     output  wire    [WIDTH_SEL-1 : 0]       rx,
@@ -137,6 +138,7 @@ in_rd_controller_fsm rd_control
     .rx_out(rx),
     .fifo_rd_en(fifo_rd_en),
     .ready(rx_ready),
+    .full_in(full_in),
     .out_valid(vld),
     .out_sel(out_sel),
     .ready_in(ready_in)

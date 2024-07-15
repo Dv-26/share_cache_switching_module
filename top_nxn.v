@@ -97,6 +97,7 @@ generate
             .tx(in_tx),
             .vld(in_vld),
             .ready_in(in_ready),
+            .full_in(alm_ost_full),
             .data(in_data)
         );
 

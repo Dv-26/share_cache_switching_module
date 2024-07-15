@@ -22,6 +22,7 @@ module voq
 
     output  wire    [PORT_NUB-1 : 0]    empty,
     output  wire                        full,
+    output  wire                        full_next,
     output  wire                        alm_ost_full,
     output  wire    [WIDTH_ADDR-1 : 0]  space
 );
@@ -76,7 +77,7 @@ free_ptr_fifo
     .w_data(free_ptr_w_data),
     .r_data(free_ptr_r_data),
     .empty(free_ptr_empty),
-    .empty_next(alm_ost_full),
+    .empty_next(full_next),
     .full(),
     .count(free_ptr_conut)
 );
@@ -87,6 +88,7 @@ assign  free_ptr_w_data = multi_channel_out;
 assign  multi_channel_in = free_ptr_r_data ;
 assign  full = free_ptr_empty;
 assign  space = free_ptr_conut;
+assign  alm_ost_full = space <= THRESHOLD;
 
 wire                        sdram_wr_en;
 wire                        sdram_rd_en;

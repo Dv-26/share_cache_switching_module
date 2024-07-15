@@ -301,7 +301,7 @@ generate
             .rd_vaild(voq_rd_en),
             .rd_sel(voq_rd_sel),
             // .full(voq_full),    //因为流水线会滞后log2(N)个时钟周期，�?以满信号要提�? 防止丢数�?
-            .alm_ost_full(voq_full),
+            .full_next(voq_full),
             .empty(voq_empty)
         );
 
