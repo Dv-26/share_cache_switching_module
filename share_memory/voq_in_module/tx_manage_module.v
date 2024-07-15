@@ -46,7 +46,7 @@ wire                        nub_eq_list_out;
 
 reg_list
 #(
-    .DEPTH(2*PORT_NUB),
+    .DEPTH(3*PORT_NUB),
     .DATA_WIDTH(WIDTH_LIST),
     .NUB(PORT_NUB)
 )
