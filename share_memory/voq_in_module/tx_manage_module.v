@@ -1,4 +1,5 @@
 `include "../../generate_parameter.vh"
+
 module tx_manage_fsm
 #(
     parameter   NUB = 0      
@@ -33,6 +34,7 @@ wire    [WIDTH_SEL-1 : 0]   data_in_tx;
 reg                         out_sel;
 
 assign  data_in_tx = data_in[WIDTH_PORT-1 : WIDTH_PORT-WIDTH_SEL];
+assign tx_valid    = data_in_tx == NUB; 
 
 reg                         list_wr_en;
 reg                         list_rd_en;
@@ -46,7 +48,7 @@ wire                        nub_eq_list_out;
 
 reg_list
 #(
-    .DEPTH(3*PORT_NUB),
+    .DEPTH(16),
     .DATA_WIDTH(WIDTH_LIST),
     .NUB(PORT_NUB)
 )
@@ -89,6 +91,7 @@ assign {valid_out,nub_out,data_out} = out_reg;
 reg     [WIDTH_SEL-1 : 0]   nub_reg;
 reg                         nub_add,nub_rst;
 wire                        nub_eq_in;
+wire                        nub_eq_ctrl;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -102,11 +105,25 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
+assign nub_eq_in        = nub_in == nub_reg;
+assign nub_eq_ctrl      = nub_reg == NUB;
+
 reg     [WIDTH_LENGTH-1 : 0]    length_reg;
 reg                             length_reg_minus,length_reg_load;
 wire                            length_eq_zero;
 wire    [WIDTH_LENGTH-1 : 0]    data_length_in;
 reg                             length_sel;
+wire                            ctrl_verify;
+wire    [WIDTH_DATA-1 : 0]      ctrl_verify_in;
+
+ctrl_verify ctrl_verify_module
+(
+    .data_in    (ctrl_verify_in),
+    .verify_en  (ctrl_verify),
+    .length     (data_length_in)
+);
+
+assign ctrl_verify_in = (nub_eq_list_out)? list_data_out:data_in;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -119,16 +136,23 @@ always @(posedge clk or negedge rst_n)begin
     end
 end
 
-assign data_length_in = (nub_eq_list_out)? list_data_out[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY]:data_in[WIDTH_LENGTH+WIDTH_CRC+WIDTH_PRIORITY-1:WIDTH_CRC+WIDTH_PRIORITY];
-assign length_eq_zero = length_reg == 0;
+assign length_eq_zero   = length_reg == 0;
 
-assign tx_valid         = data_in_tx == NUB; 
-assign nub_eq_in        = nub_in == nub_reg;
+reg     ctrl_flag,ctrl_flag_flip;
 
-localparam IDLE =   1'b0;
-localparam RUN  =   1'b1;
+always @(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        ctrl_flag <= 0;
+    else
+        if(ctrl_flag_flip)
+            ctrl_flag <= ~ctrl_flag;
+end
 
-reg state,state_n;
+localparam IDLE =   3'b001;
+localparam RUN1 =   3'b010;
+localparam RUN2 =   3'b100;
+
+reg [2:0]   state,state_n;
 
 always @(posedge clk or negedge rst_n)begin
     if(!rst_n)
@@ -151,127 +175,72 @@ always @(*)begin
     length_reg_load     = 1'b0;
     out_valid           = 1'b0;  
     done                = 1'b0;
+    ctrl_flag_flip      = 1'b0;
 
     if(!keep_in)begin
-
-        case(state)
-            IDLE:begin
-                if(valid_in)begin
-                    if(tx_valid)begin
-                        if(nub_eq_list_out)begin
-                            state_n = RUN;
+        if(valid_in && !tx_valid)
+            out_valid = 1'b1;
+        else begin
+            case(state)
+                IDLE:begin
+                    if(valid_in)begin
+                        if(nub_eq_in && ctrl_verify && !nub_eq_list_out)begin
+                            state_n = RUN1;
                             length_reg_load = 1;
                             out_valid = 1;
-                            list_rd_en = 1;
-                            list_wr_en = 1;
                             nub_add = 1;
-                            out_sel = 1;
                         end
                         else begin
-                            if(nub_eq_in)begin
-                                state_n = RUN;
-                                length_reg_load = 1;
-                                out_valid = 1;
-                                nub_add = 1;
-                            end
-                            else begin
-                                list_wr_en = 1;
-                                out_sel = 1;
-                            end
-                        end
-                    end
-                    else
-                        out_valid = 1;
-                end
-                else begin
-                    if(nub_eq_list_out)begin
-                        state_n = RUN;
-                        length_reg_load = 1;
-                        list_rd_en = 1;
-                        out_sel = 1;
-                        out_valid = 1;
-                        nub_add = 1;
-                    end
-                end
-            end
-            RUN:begin
-
-                if(length_eq_zero)begin
-                    state_n = IDLE;
-                    nub_rst = 1;
-                    done = 1;
-                    if(valid_in)begin
-                        if(tx_valid)begin
                             out_sel = 1;
                             list_wr_en = 1;
                         end
-                        else
-                            out_valid = 1;
+                    end
+
+                    if(nub_eq_list_out)begin
+                        state_n = RUN1;
+                        length_reg_load = 1;
+                        out_valid = 1;
+                        nub_add = 1;
+                        out_sel = 1;
+                        list_rd_en = 1;
                     end
                 end
-                else begin
+                RUN1:begin
+
+                    if(length_eq_zero)begin
+                        done = 1;
+                        nub_rst = 1;
+                        state_n = IDLE;
+                    end
 
                     if(valid_in)begin
-                        if(tx_valid)begin
-                            if(nub_eq_list_out)begin
-                                out_sel = 1'b1;
-                                list_wr_en = 1'b1;
-                                length_reg_minus = 1'b1;
-                                list_rd_en = 1'b1;
-                                nub_add = 1'b1;
-                                out_valid = 1'b1;
-                            end
-                            else if(nub_eq_in)begin
-                                out_valid = 1'b1;
-                                length_reg_minus = 1'b1;
-                                nub_add = 1'b1;
-                            end
-                            else begin
-                                out_sel = 1'b1;
-                                list_wr_en = 1'b1;
-                            end
-                            // case({nub_eq_in,nub_eq_list_out})
-                            //     2'b00:begin
-                            //         out_sel = 1'b1;
-                            //         list_wr_en = 1'b1;
-                            //     end
-                            //     2'b01:begin
-                            //     end
-                            //     2'b10:begin
-                            //         out_valid = 1'b1;
-                            //         length_reg_minus = 1'b1;
-                            //         nub_add = 1'b1;
-                            //     end
-                            //     2'b11:begin
-                            //         out_sel = 1'b1;
-                            //         list_wr_en = 1'b1;
-                            //         if(!length_eq_zero)begin
-                            //             length_reg_minus = 1'b1;
-                            //             list_rd_en = 1'b1;
-                            //             nub_add = 1'b1;
-                            //             out_valid = 1'b1;
-                            //         end
-                            //     end
-                            // endcase
+                        if(nub_eq_in && !nub_eq_list_out && !length_eq_zero)begin
+                            out_valid = 1;
+                            length_reg_minus = 1;
+                            nub_add = 1;
                         end
-                        else
-                            out_valid = 1'b1;
+                        else begin
+                            out_sel = 1;
+                            list_wr_en = 1;
+                        end
+                        if(ctrl_verify && nub_in == NUB)
+                            ctrl_flag_flip = 1;
                     end
-                    else begin
 
-                        if(nub_eq_list_out)begin
-                            out_sel = 1'b1;
-                            length_reg_minus = 1'b1;
-                            list_rd_en = 1'b1;
-                            nub_add = 1'b1;
-                            out_valid = 1'b1;
-                        end
+                    if(nub_eq_list_out && !length_eq_zero)begin
+                        out_sel = 1;
+                        length_reg_minus = 1;
+                        list_rd_en = 1;
+                        nub_add = 1;
+                        out_valid = 1;
                     end
+
                 end
-            end
+                RUN2:begin
 
-        endcase
-        
+                end
+            endcase
+        end
     end
 
 end

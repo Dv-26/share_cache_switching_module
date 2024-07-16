@@ -144,7 +144,8 @@ in_rd_controller_fsm rd_control
     .ready_in(ready_in)
 );
 
-assign  ctrl_data_out = {out_data_length,out_crc,out_priority};
+assign  ctrl_data_out = {~out_data_length,out_data_length,out_crc,out_priority}; 
+//取反码用于后级模块判断控制帧
 assign  data = (out_sel == 1)? ctrl_data_out:fifo_rd_data;
 assign  tx = num;
 

@@ -19,6 +19,7 @@ module reg_fifo
 reg [DATA_WIDTH-1 : 0]      shift_reg[DEPTH-1 : 0];
 reg [$clog2(DEPTH)-1 : 0]   count,count_n;
 
+wire    [$clog2(DEPTH)-1 : 0]    rd_sel;
 // assign full = (&count[$clog2(DEPTH)-1 : 1]) & !count[0];
 // assign empty = &count;
 assign full = &count;
@@ -43,7 +44,8 @@ always@(*)begin
     endcase
 end
 
-assign rd_data = shift_reg[count - 1];
+assign rd_data = shift_reg[rd_sel];
+assign rd_sel = count - 1;
 
 generate
     genvar i;
