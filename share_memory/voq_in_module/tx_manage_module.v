@@ -223,20 +223,36 @@ always @(*)begin
                             out_sel = 1;
                             list_wr_en = 1;
                         end
-                        if(ctrl_verify && nub_in == NUB)
-                            ctrl_flag_flip = 1;
                     end
 
                     if(nub_eq_list_out && !length_eq_zero)begin
                         out_sel = 1;
                         length_reg_minus = 1;
-                        list_rd_en = 1;
                         nub_add = 1;
                         out_valid = 1;
+                        if(ctrl_verify && nub_eq_ctrl)
+                            state_n = RUN2;
+                        else
+                            list_rd_en = 1;
                     end
 
                 end
                 RUN2:begin
+
+                    if(length_eq_zero)begin
+                        done = 1;
+                        nub_rst = 1;
+                        state_n = IDLE;
+                    end
+                    else begin
+                        out_valid = 1;
+                        length_reg_minus = 1;
+                    end
+
+                    if(valid_in)begin
+                        out_sel = 1;
+                        list_wr_en = 1;
+                    end
 
                 end
             endcase
