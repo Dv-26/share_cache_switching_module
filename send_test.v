@@ -35,45 +35,6 @@ assign sys_rst_n = rst_n && locked;
 wire [PORT_NUB-1 : 0] wr_sop_or; 
 assign wr_sop_out = |wr_sop_or;
 
-(* MARK_DEBUG = "true" *)wire                            wr_sop_0;
-(* MARK_DEBUG = "true" *)wire                            wr_eop_0;
-(* MARK_DEBUG = "true" *)wire                            wr_vld_0;
-
-(* MARK_DEBUG = "true" *)wire                            wr_sop_1;
-(* MARK_DEBUG = "true" *)wire                            wr_eop_1;
-(* MARK_DEBUG = "true" *)wire                            wr_vld_1;
-
-(* MARK_DEBUG = "true" *)wire                            wr_sop_2;
-(* MARK_DEBUG = "true" *)wire                            wr_eop_2;
-(* MARK_DEBUG = "true" *)wire                            wr_vld_2;
-
-(* MARK_DEBUG = "true" *)wire                            wr_sop_3;
-(* MARK_DEBUG = "true" *)wire                            wr_eop_3;
-(* MARK_DEBUG = "true" *)wire                            wr_vld_3;
-
-(* MARK_DEBUG = "true" *)wire                            rd_sop_3;
-(* MARK_DEBUG = "true" *)wire                            rd_eop_3;
-(* MARK_DEBUG = "true" *)wire                            rd_vld_3;
-
-(* MARK_DEBUG = "true" *)wire                            rd_sop_0;
-(* MARK_DEBUG = "true" *)wire                            rd_eop_0;
-(* MARK_DEBUG = "true" *)wire                            rd_vld_0;
-
-(* MARK_DEBUG = "true" *)wire                            rd_sop_1;
-(* MARK_DEBUG = "true" *)wire                            rd_eop_1;
-(* MARK_DEBUG = "true" *)wire                            rd_vld_1;
-
-(* MARK_DEBUG = "true" *)wire                            rd_sop_2;
-(* MARK_DEBUG = "true" *)wire                            rd_eop_2;
-(* MARK_DEBUG = "true" *)wire                            rd_vld_2;
-
-(* MARK_DEBUG = "true" *)wire                            rd_sop_3;
-(* MARK_DEBUG = "true" *)wire                            rd_eop_3;
-(* MARK_DEBUG = "true" *)wire                            rd_vld_3;
-
-(* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     wr_data[PORT_NUB-1 : 0];
-(* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     rd_data[PORT_NUB-1 : 0];
-
 wire      [PORT_NUB-1 : 0]              top_wr_sop;          
 wire      [PORT_NUB-1 : 0]              top_wr_eop;          
 wire      [PORT_NUB-1 : 0]              top_wr_vld;          
@@ -83,37 +44,127 @@ wire      [PORT_NUB-1 : 0]              top_rd_eop;
 wire      [PORT_NUB-1 : 0]              top_rd_vld;          
 wire      [DATA_WIDTH_TOTAL-1 : 0]      top_rd_data;
 
-assign wr_sop_0 = top_wr_sop[0];
-assign wr_sop_1 = top_wr_sop[1];
-assign wr_sop_2 = top_wr_sop[2];
-assign wr_sop_3 = top_wr_sop[3];
+generate
 
-assign wr_eop_0 = top_wr_eop[0];
-assign wr_eop_1 = top_wr_eop[1];
-assign wr_eop_2 = top_wr_eop[2];
-assign wr_eop_3 = top_wr_eop[3];
+    (* MARK_DEBUG = "true" *)wire                            wr_sop_0;
+    (* MARK_DEBUG = "true" *)wire                            wr_eop_0;
+    (* MARK_DEBUG = "true" *)wire                            wr_vld_0;
+    (* MARK_DEBUG = "true" *)wire                            rd_sop_0;
+    (* MARK_DEBUG = "true" *)wire                            rd_eop_0;
+    (* MARK_DEBUG = "true" *)wire                            rd_vld_0;
 
-assign wr_vld_0 = top_wr_vld[0];
-assign wr_vld_1 = top_wr_vld[1];
-assign wr_vld_2 = top_wr_vld[2];
-assign wr_vld_3 = top_wr_vld[3];
+    assign wr_sop_0 = top_wr_sop[0];
+    assign wr_eop_0 = top_wr_eop[0];
+    assign wr_vld_0 = top_wr_vld[0];
+    assign rd_sop_0 = top_rd_sop[0];
+    assign rd_eop_0 = top_rd_eop[0];
+    assign rd_vld_0 = top_rd_vld[0];
 
-assign rd_sop_0 = top_rd_sop[0];
-assign rd_sop_1 = top_rd_sop[1];
-assign rd_sop_2 = top_rd_sop[2];
-assign rd_sop_3 = top_rd_sop[3];
+    (* MARK_DEBUG = "true" *)wire                            wr_sop_1;
+    (* MARK_DEBUG = "true" *)wire                            wr_eop_1;
+    (* MARK_DEBUG = "true" *)wire                            wr_vld_1;
+    (* MARK_DEBUG = "true" *)wire                            rd_sop_1;
+    (* MARK_DEBUG = "true" *)wire                            rd_eop_1;
+    (* MARK_DEBUG = "true" *)wire                            rd_vld_1;
 
-assign rd_eop_0 = top_rd_eop[0];
-assign rd_eop_1 = top_rd_eop[1];
-assign rd_eop_2 = top_rd_eop[2];
-assign rd_eop_3 = top_rd_eop[3];
+    assign wr_sop_1 = top_wr_sop[1];
+    assign wr_eop_1 = top_wr_eop[1];
+    assign wr_vld_1 = top_wr_vld[1];
+    assign rd_sop_1 = top_rd_sop[1];
+    assign rd_eop_1 = top_rd_eop[1];
+    assign rd_vld_1 = top_rd_vld[1];
 
-assign rd_vld_0 = top_rd_vld[0];
-assign rd_vld_1 = top_rd_vld[1];
-assign rd_vld_2 = top_rd_vld[2];
-assign rd_vld_3 = top_rd_vld[3];
+    (* MARK_DEBUG = "true" *)wire                            wr_sop_2;
+    (* MARK_DEBUG = "true" *)wire                            wr_eop_2;
+    (* MARK_DEBUG = "true" *)wire                            wr_vld_2;
+    (* MARK_DEBUG = "true" *)wire                            rd_sop_2;
+    (* MARK_DEBUG = "true" *)wire                            rd_eop_2;
+    (* MARK_DEBUG = "true" *)wire                            rd_vld_2;
 
+    assign wr_sop_2 = top_wr_sop[2];
+    assign wr_eop_2 = top_wr_eop[2];
+    assign wr_vld_2 = top_wr_vld[2];
+    assign rd_sop_2 = top_rd_sop[2];
+    assign rd_eop_2 = top_rd_eop[2];
+    assign rd_vld_2 = top_rd_vld[2];
 
+    (* MARK_DEBUG = "true" *)wire                            wr_sop_3;
+    (* MARK_DEBUG = "true" *)wire                            wr_eop_3;
+    (* MARK_DEBUG = "true" *)wire                            wr_vld_3;
+    (* MARK_DEBUG = "true" *)wire                            rd_sop_3;
+    (* MARK_DEBUG = "true" *)wire                            rd_eop_3;
+    (* MARK_DEBUG = "true" *)wire                            rd_vld_3;
+
+    assign wr_sop_3 = top_wr_sop[3];
+    assign wr_eop_3 = top_wr_eop[3];
+    assign wr_vld_3 = top_wr_vld[3];
+    assign rd_sop_3 = top_rd_sop[3];
+    assign rd_eop_3 = top_rd_eop[3];
+    assign rd_vld_3 = top_rd_vld[3];
+
+    if(PORT_NUB > 4)begin
+
+        (* MARK_DEBUG = "true" *)wire                            wr_sop_4;
+        (* MARK_DEBUG = "true" *)wire                            wr_eop_4;
+        (* MARK_DEBUG = "true" *)wire                            wr_vld_4;
+        (* MARK_DEBUG = "true" *)wire                            rd_sop_4;
+        (* MARK_DEBUG = "true" *)wire                            rd_eop_4;
+        (* MARK_DEBUG = "true" *)wire                            rd_vld_4;
+
+        assign wr_sop_4 = top_wr_sop[4];
+        assign wr_eop_4 = top_wr_eop[4];
+        assign wr_vld_4 = top_wr_vld[4];
+        assign rd_sop_4 = top_rd_sop[4];
+        assign rd_eop_4 = top_rd_eop[4];
+        assign rd_vld_4 = top_rd_vld[4];
+
+        (* MARK_DEBUG = "true" *)wire                            wr_sop_5;
+        (* MARK_DEBUG = "true" *)wire                            wr_eop_5;
+        (* MARK_DEBUG = "true" *)wire                            wr_vld_5;
+        (* MARK_DEBUG = "true" *)wire                            rd_sop_5;
+        (* MARK_DEBUG = "true" *)wire                            rd_eop_5;
+        (* MARK_DEBUG = "true" *)wire                            rd_vld_5;
+
+        assign wr_sop_5 = top_wr_sop[5];
+        assign wr_eop_5 = top_wr_eop[5];
+        assign wr_vld_5 = top_wr_vld[5];
+        assign rd_sop_5 = top_rd_sop[5];
+        assign rd_eop_5 = top_rd_eop[5];
+        assign rd_vld_5 = top_rd_vld[5];
+
+        (* MARK_DEBUG = "true" *)wire                            wr_sop_6;
+        (* MARK_DEBUG = "true" *)wire                            wr_eop_6;
+        (* MARK_DEBUG = "true" *)wire                            wr_vld_6;
+        (* MARK_DEBUG = "true" *)wire                            rd_sop_6;
+        (* MARK_DEBUG = "true" *)wire                            rd_eop_6;
+        (* MARK_DEBUG = "true" *)wire                            rd_vld_6;
+
+        assign wr_sop_6 = top_wr_sop[6];
+        assign wr_eop_6 = top_wr_eop[6];
+        assign wr_vld_6 = top_wr_vld[6];
+        assign rd_sop_6 = top_rd_sop[6];
+        assign rd_eop_6 = top_rd_eop[6];
+        assign rd_vld_6 = top_rd_vld[6];
+
+        (* MARK_DEBUG = "true" *)wire                            wr_sop_7;
+        (* MARK_DEBUG = "true" *)wire                            wr_eop_7;
+        (* MARK_DEBUG = "true" *)wire                            wr_vld_7;
+        (* MARK_DEBUG = "true" *)wire                            rd_sop_7;
+        (* MARK_DEBUG = "true" *)wire                            rd_eop_7;
+        (* MARK_DEBUG = "true" *)wire                            rd_vld_7;
+
+        assign wr_sop_7 = top_wr_sop[7];
+        assign wr_eop_7 = top_wr_eop[7];
+        assign wr_vld_7 = top_wr_vld[7];
+        assign rd_sop_7 = top_rd_sop[7];
+        assign rd_eop_7 = top_rd_eop[7];
+        assign rd_vld_7 = top_rd_vld[7];
+
+    end
+endgenerate
+
+(* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     wr_data[PORT_NUB-1 : 0];
+(* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     rd_data[PORT_NUB-1 : 0];
 (* MARK_DEBUG="true" *)wire                                          top_full;
 (* MARK_DEBUG="true" *)wire                                          top_alm_ost_full;
 wire      [PORT_NUB-1 : 0]              top_ready;

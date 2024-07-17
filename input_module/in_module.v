@@ -1,6 +1,7 @@
 `timescale 1ns/1ns
 `include "../generate_parameter.vh"
 
+
 module in_module
 #(
     parameter   num = 0
@@ -10,7 +11,7 @@ module in_module
     input   wire                            external_clk,
     input   wire                            internal_clk,
     input   wire                            wr_sop,
-    input   wire                            wr_eop,
+    input   wire                             wr_eop,
     input   wire                            wr_vld,
     input   wire                            full_in,
     input   wire                            ready_in,
@@ -20,7 +21,6 @@ module in_module
     output  wire                            vld,
     output  wire    [DATA_WIDTH-1 : 0]      data
 );
-
 
 localparam  WIDTH_LENGTH    =   $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_PRIORITY  =   $clog2(`PRIORITY);
