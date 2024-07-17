@@ -201,7 +201,7 @@ task random_send;
                 rx = {$random} % PORT_NUB_TOTAL;
                 //priority = {$random} % `PRIORITY;
                 priority = 1;
-                data_length = ({$random} % 50) + 16;
+                data_length = ({$random} % 100) + 16;
                 send(n,rx,priority,data_length);
             end
         end
@@ -224,11 +224,10 @@ initial
 begin
     init();
     wada();
-    top_ready[0] = 0;
     #(50*CLK_TIME)
-    for(times = 0; times<500; times=times+1)begin
-        if(times == 250)
-            top_ready[0] = 1;
+    for(times = 0; times<400; times=times+1)begin
+        // if(times == 250)
+        //     top_ready[0] = 1;
         wait(|send_ready)
             random_send();
             #((500)*CLK_TIME);
