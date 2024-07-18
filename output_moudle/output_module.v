@@ -19,7 +19,10 @@ module output_module
     output  reg                                 rd_sop,
     output  reg                                 rd_eop,
     output  reg                                 rd_vld,
-    output  reg     [DATA_WIDTH-1 : 0]          rd_data
+    output  reg     [DATA_WIDTH-1 : 0]          rd_data,
+
+    input   wire                                dispatch_sel,
+    input   wire    [WIDTH_WIEGHT_TOTAL-1 : 0]  wrr_wieght_in
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
@@ -28,6 +31,8 @@ localparam  WIDTH_SEL           =   $clog2(PORT_NUB_TOTAL);
 localparam  WIDTH_LENGTH        =   $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_PRIORITY      =   $clog2(`PRIORITY);
 localparam  WIDTH_CRC           =   `CRC32_LENGTH;
+localparam  WIDTH_WIEGHT        =   $clog2(`PRIORITY);
+localparam  WIDTH_WIEGHT_TOTAL  =   PORT_NUB_TOTAL * WIDTH_WIEGHT;
 
 //--------------------------------internal_clk_domain--------------------------
 
@@ -85,17 +90,14 @@ generate
     end
 endgenerate
 
+reg     [WIDTH_SEL-1 : 0]   ruling_reg;
+reg                         ruling_reg_load;
+wire                        ruling_valid;
+
 wire                        compare_tree_valid;
 wire    [WIDTH_SEL-1 : 0]   compare_port_out;
-reg     [WIDTH_SEL-1 : 0]   compare_reg;
-reg                         compare_reg_load;
 
-compare_tree 
-#(
-    .PORT_NUB(PORT_NUB_TOTAL),
-    .WIDTH_WIEGHT(`PRIORITY)
-)
-compare_tree 
+compare_tree sp  
 (
     .clk        (internal_clk),
     .rst_n      (rst_n),
@@ -105,12 +107,34 @@ compare_tree
     .valid_out  (compare_tree_valid)
 );
 
+wire                        wrr_valid;
+wire                        wrr_en;
+wire    [WIDTH_SEL-1 : 0]   wrr_port_out;
+
+wrr#(.NUB(NUB)) wrr
+(
+    .clk        (internal_clk),
+    .rst_n      (rst_n),
+    .en         (wrr_en),
+    .req_in     (ctrl_flag),
+    .wieght_in  (wrr_wieght_in),
+    .port_out   (wrr_port_out),
+    .valid_out  (wrr_valid)
+);
+
+assign wrr_en = state == RULING;
+
+assign ruling_valid = (dispatch_sel)? compare_tree_valid:wrr_valid;
+
 always @(posedge internal_clk or negedge rst_n)begin
     if(!rst_n)
-        compare_reg <= 0;
+        ruling_reg <= 0;
     else begin
-        if(compare_reg_load)
-            compare_reg <= compare_port_out;
+        if(ruling_reg_load)
+            if(dispatch_sel)
+                ruling_reg <= compare_port_out;
+            else
+                ruling_reg <= wrr_port_out;
     end
 end
 
@@ -129,7 +153,7 @@ always @(posedge internal_clk or negedge rst_n)begin
     end
 end
 
-assign length_eq = length_cnt == package_length[compare_reg];
+assign length_eq = length_cnt == package_length[ruling_reg];
 
 wire    [WIDTH_CRC-1:0]     crc_out;
 wire                        verify; 
@@ -146,7 +170,7 @@ crc16_32bit crc_module
 );
 
 assign crc_rst_n = rst_n && ~crc_rst;
-assign verify = crc_out == crc[compare_reg];
+assign verify = crc_out == crc[ruling_reg];
 
 //-------------------------------- FSM -------------------------
 
@@ -180,7 +204,7 @@ always @(*)begin
     times_cnt_add = 0;
     ctrl_data_load = 0;
     ctrl_data_rst = 0;
-    compare_reg_load = 0;
+    ruling_reg_load = 0;
     length_add = 0;
     fifo_wr_en_n = 0;
     length_zero = 0;
@@ -206,8 +230,8 @@ always @(*)begin
             state_n = SCAN;
         end
         RULING:begin
-            if(compare_tree_valid)begin
-                compare_reg_load = 1;
+            if(ruling_valid)begin
+                ruling_reg_load = 1;
                 state_n = RD;
             end
             else begin
@@ -216,7 +240,7 @@ always @(*)begin
         end
         RD:begin
             length_add = 1;
-            rd_sel = compare_reg;
+            rd_sel = ruling_reg;
             rd_en = 1;
             fifo_wr_en_n = 1;
             if(length_eq)begin
@@ -226,7 +250,7 @@ always @(*)begin
             end
         end
         RD_DONE:begin
-            rd_sel = compare_reg;
+            rd_sel = ruling_reg;
             length_zero = 1;
 
             tx_valid = 1;
@@ -238,7 +262,7 @@ always @(*)begin
                 rd_done = 1;
                 state_n = SCAN;
                 crc_rst = 1;
-                ctrl_data_rst[compare_reg] = 1;
+                ctrl_data_rst[ruling_reg] = 1;
             end
             
             // crc_rst = 1;
@@ -248,14 +272,14 @@ always @(*)begin
             // else begin
             //     // fifo_rst = 1;
             //     state_n = SCAN;
-            //     ctrl_data_rst[compare_reg] = 1;
+            //     ctrl_data_rst[ruling_reg] = 1;
             // end
         end
         // WAIT:begin
         //     tx_valid = 1;
         //     if(tx_ready)begin
         //         state_n = SCAN;
-        //         ctrl_data_rst[compare_reg] = 1;
+        //         ctrl_data_rst[ruling_reg] = 1;
         //     end
         // end
     endcase
@@ -313,7 +337,7 @@ cdc_handshake
     .data_out(handshake_out)
 );
 
-assign handshake_in = {error_in, priority[compare_reg], package_length[compare_reg]};
+assign handshake_in = {error_in, priority[ruling_reg], package_length[ruling_reg]};
 assign {error_out, priority_out, package_length_out} = handshake_out;
 
 //--------------------------------external_clk_domain--------------------------
