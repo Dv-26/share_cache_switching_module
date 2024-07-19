@@ -13,6 +13,8 @@ localparam  DATA_WIDTH_TOTAL    =   PORT_NUB * DATA_WIDTH;
 localparam  WIDTH_SEL           =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_LENGTH        =   $clog2(`DATA_LENGTH_MAX);
 localparam  WIDTH_PRIORITY      =   $clog2(`PRIORITY);
+localparam  WIDTH_WIEGHT        =   $clog2(`PRIORITY);
+localparam  WIDTH_WIEGHT_TOTAL  =   PORT_NUB * WIDTH_WIEGHT;
 
 wire    internal_clk;
 wire    clk_250Mhz;
@@ -30,7 +32,7 @@ clk_wiz_0 clk_generate
     .clk_in1(clk)           // input clk_in1
 );      
 
-assign sys_rst_n = rst_n && locked;
+assign sys_rst_n = locked && rst_n;
 
 wire [PORT_NUB-1 : 0] wr_sop_or; 
 assign wr_sop_out = |wr_sop_or;
@@ -165,11 +167,17 @@ endgenerate
 
 (* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     wr_data[PORT_NUB-1 : 0];
 (* MARK_DEBUG = "true" *)wire    [DATA_WIDTH-1 : 0]     rd_data[PORT_NUB-1 : 0];
-(* MARK_DEBUG="true" *)wire                                          top_full;
-(* MARK_DEBUG="true" *)wire                                          top_alm_ost_full;
-wire      [PORT_NUB-1 : 0]              top_ready;
+(* MARK_DEBUG = "true" *)wire                                       top_full;
+(* MARK_DEBUG = "true" *)wire                                       top_alm_ost_full;
+wire                                                                top_dispatch_sel;
+wire      [WIDTH_WIEGHT_TOTAL-1 : 0]                                top_wrr_wieght_in;
+wire      [PORT_NUB-1 : 0]                                          top_ready;
+wire      [WIDTH_WIEGHT-1 : 0]                                      wrr_wieght[PORT_NUB-1 : 0];
 
 assign full = top_alm_ost_full;
+
+wire      [WIDTH_WIEGHT_TOTAL-1 : 0]            top_wrr_wieght_in;
+reg       [PORT_NUB-1 : 0]                      top_ready;
 
 top_nxn top_test 
 (
@@ -186,7 +194,19 @@ top_nxn top_test
     .rd_data            (top_rd_data),
     .ready              (top_ready),
     .full               (top_full),
-    .alm_ost_full       (top_alm_ost_full)
+    .alm_ost_full       (top_alm_ost_full),
+    .dispatch_sel       (top_dispatch_sel),
+    .wrr_wieght_in      (top_wrr_wieght_in)
+);
+
+vio_1 dispatch 
+(
+  .clk              (clk_250Mhz),             // input wire clk
+  .probe_out0       (top_dispatch_sel),         // output wire [0 : 0] probe_out0
+  .probe_out1       (wrr_wieght[0]),            // output wire [2 : 0] probe_out1
+  .probe_out2       (wrr_wieght[1]),            // output wire [2 : 0] probe_out2
+  .probe_out3       (wrr_wieght[2]),            // output wire [2 : 0] probe_out3
+  .probe_out4       (wrr_wieght[3])             // output wire [2 : 0] probe_out4
 );
 
 assign top_ready = {PORT_NUB{1'b1}};
@@ -241,6 +261,8 @@ generate
             .wr_vld(top_wr_vld[i]),
             .wr_data(wr_data[i])
         );
+
+        assign top_wrr_wieght_in[(i+1)*WIDTH_WIEGHT-1 : i*WIDTH_WIEGHT] = wrr_wieght[i];
 
     end
 

@@ -63,7 +63,6 @@ reg     [PORT_NUB_TOTAL-1 : 0]                  ctrl_data_load;
 wire    [PORT_NUB_TOTAL-1 : 0]                  ctrl_data_empty;
 reg     [PORT_NUB_TOTAL-1 : 0]                  ctrl_data_rst;
 
-
 generate
     genvar i;
     for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin: ctrl_reg
@@ -97,7 +96,12 @@ wire                        ruling_valid;
 wire                        compare_tree_valid;
 wire    [WIDTH_SEL-1 : 0]   compare_port_out;
 
-compare_tree sp  
+compare_tree
+#(
+    .PORT_NUB(PORT_NUB_TOTAL),
+    .WIDTH_WIEGHT(WIDTH_WIEGHT)
+)
+sp  
 (
     .clk        (internal_clk),
     .rst_n      (rst_n),
@@ -172,6 +176,15 @@ crc16_32bit crc_module
 assign crc_rst_n = rst_n && ~crc_rst;
 assign verify = crc_out == crc[ruling_reg];
 
+wire    ctrl_verify;
+
+ctrl_verify ctrl_verify_module
+(
+    .data_in    (port_in),
+    .verify_en  (ctrl_verify)
+);
+
+
 //-------------------------------- FSM -------------------------
 
 localparam  SCAN        = 3'b000;
@@ -226,8 +239,12 @@ always @(*)begin
             end
         end
         GET_CTRL:begin
-            ctrl_data_load[times_cnt] = 1;
-            state_n = SCAN;
+            if(ctrl_verify)begin
+                ctrl_data_load[times_cnt] = 1;
+                state_n = SCAN;
+            end
+            else 
+                rd_en = 1;
         end
         RULING:begin
             if(ruling_valid)begin

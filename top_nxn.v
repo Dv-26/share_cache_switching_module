@@ -18,7 +18,10 @@ module top_nxn
     output      wire    [DATA_WIDTH_TOTAL-1 : 0]            rd_data,
     input       wire    [PORT_NUB_TOTAL-1 : 0]              ready,
     output      wire                                        full,
-    output      wire                                        alm_ost_full
+    output      wire                                        alm_ost_full,
+
+    input       wire                                        dispatch_sel,
+    input       wire    [WIDTH_WIEGHT_TOTAL-1 : 0]          wrr_wieght_in
 );
 
 localparam  PORT_NUB_TOTAL      =   `PORT_NUB_TOTAL;
@@ -33,6 +36,8 @@ localparam  WIDTH_VOQ1  =   `DATA_WIDTH;
 localparam  WIDTH_TOTAL  =   PORT_NUB_TOTAL * WIDTH_PORT; 
 localparam  WIDTH_SEL   = $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
+localparam  WIDTH_WIEGHT        =   $clog2(`PRIORITY);
+localparam  WIDTH_WIEGHT_TOTAL  =   PORT_NUB_TOTAL * WIDTH_WIEGHT;
 
 wire    [WIDTH_SEL_TOTAL-1 : 0]             rx_in;
 wire    [WIDTH_SEL_TOTAL-1 : 0]             tx_in;
@@ -64,6 +69,21 @@ switch_moudle switch_moudle
     .ready(ready_out),
     .alm_ost_full(alm_ost_full)
 );
+
+wire    [WIDTH_WIEGHT_TOTAL : 0]    dispatch_config_in;
+wire    [WIDTH_WIEGHT_TOTAL : 0]    dispatch_config_out;
+
+cdc #(.DATA_WIDTH(1+WIDTH_WIEGHT_TOTAL))
+dispatch_config
+(
+    .tx_clk     (external_clk),
+    .rx_clk     (internal_clk),
+    .rst_n      (rst_n),
+    .in_data    (dispatch_config_in),
+    .out_data   (dispatch_config_out)
+);
+
+assign dispatch_config_in = {dispatch_sel, wrr_wieght_in};
 
 generate
     genvar i;
@@ -140,7 +160,9 @@ generate
             .rd_sop         (out_rd_sop),
             .rd_eop         (out_rd_eop),
             .rd_vld         (out_rd_vld),
-            .rd_data        (out_rd_data)
+            .rd_data        (out_rd_data),
+            .dispatch_sel   (dispatch_config_out[WIDTH_WIEGHT_TOTAL]),
+            .wrr_wieght_in  (dispatch_config_out[WIDTH_WIEGHT_TOTAL-1 : 0])
         );
 
         assign  rd_sop[i]        = out_rd_sop;

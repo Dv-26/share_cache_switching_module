@@ -50,6 +50,8 @@ localparam  WIDTH_VOQ1      =   `DATA_WIDTH;
 localparam  WIDTH_TOTAL     =   PORT_NUB_TOTAL * WIDTH_PORT; 
 localparam  WIDTH_SEL       =   $clog2(`PORT_NUB_TOTAL);
 localparam  WIDTH_SEL_TOTAL =   PORT_NUB_TOTAL * WIDTH_SEL; 
+localparam  WIDTH_WIEGHT        =   $clog2(`PRIORITY);
+localparam  WIDTH_WIEGHT_TOTAL  =   PORT_NUB_TOTAL * WIDTH_WIEGHT;
 
 wire      [PORT_NUB_TOTAL-1 : 0]              top_wr_sop;          
 wire      [PORT_NUB_TOTAL-1 : 0]              top_wr_eop;          
@@ -61,6 +63,8 @@ wire      [PORT_NUB_TOTAL-1 : 0]              top_rd_vld;
 wire      [DATA_WIDTH_TOTAL-1 : 0]            top_rd_data;
 wire                                          top_full;
 wire                                          top_alm_ost_full;
+reg                                           top_dispatch_sel;
+wire      [WIDTH_WIEGHT_TOTAL-1 : 0]          top_wrr_wieght_in;
 reg       [PORT_NUB_TOTAL-1 : 0]              top_ready;
 
 top_nxn top_tb
@@ -78,7 +82,9 @@ top_nxn top_tb
     .rd_data(top_rd_data),
     .full(top_full),
     .alm_ost_full(top_alm_ost_full),
-    .ready(top_ready)
+    .ready(top_ready),
+    .dispatch_sel(top_dispatch_sel),
+    .wrr_wieght_in(top_wrr_wieght_in)
 );
 
 wire    [10:0]   tx_cnt,rx_cnt;
@@ -103,6 +109,7 @@ reg     [19 : 0]                send_cycle[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_SEL-1 : 0]       send_dest[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_PRIORITY-1 : 0]  send_priority[PORT_NUB_TOTAL-1 : 0];
 reg     [WIDTH_LENGTH-1 : 0]    send_length[PORT_NUB_TOTAL-1 : 0];
+reg     [WIDTH_WIEGHT-1 : 0]    wrr_wieght[PORT_NUB_TOTAL-1 : 0];
 wire    [PORT_NUB_TOTAL-1 : 0]  send_done;
 wire    [PORT_NUB_TOTAL-1 : 0]  send_ready;
 
@@ -153,12 +160,14 @@ generate
         assign rd_vld = top_rd_vld[i];
         assign rd_data = top_rd_data[(i+1)*DATA_WIDTH-1 : i*DATA_WIDTH];
 
+        assign top_wrr_wieght_in[(i+1)*WIDTH_WIEGHT-1 : i*WIDTH_WIEGHT] = wrr_wieght[i];
     end
 endgenerate
 
 task init;
     integer i;
     begin
+        top_dispatch_sel = 1; //默认sp调度
         for(i=0; i<PORT_NUB_TOTAL; i=i+1)begin
             top_ready[i] = 0;
             send_start[i] = 0;
@@ -167,6 +176,7 @@ task init;
             send_length[i] = 0;
             send_single[i] = 1;
             send_cycle[i] = 0;
+            wrr_wieght[i] = 1;
         end
     end
 endtask
@@ -224,6 +234,11 @@ initial
 begin
     init();
     wada();
+    top_dispatch_sel = 0;
+    wrr_wieght[0] = 2;
+    wrr_wieght[1] = 1;
+    wrr_wieght[2] = 4;
+    wrr_wieght[3] = 6;
     #(50*CLK_TIME)
     for(times = 0; times<400; times=times+1)begin
         // if(times == 250)
