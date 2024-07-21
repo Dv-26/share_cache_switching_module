@@ -211,7 +211,7 @@ task random_send;
                 rx = {$random} % PORT_NUB_TOTAL;
                 //priority = {$random} % `PRIORITY;
                 priority = 1;
-                data_length = ({$random} % 100) + 16;
+                data_length = ({$random} % 240) + 16;
                 send(n,rx,priority,data_length);
             end
         end
@@ -245,7 +245,7 @@ begin
         //     top_ready[0] = 1;
         wait(|send_ready)
             random_send();
-            #((500)*CLK_TIME);
+            #((100)*CLK_TIME);
     end
     #(600*CLK_TIME)
     #(2500*CLK_TIME)

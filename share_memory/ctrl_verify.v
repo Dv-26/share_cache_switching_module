@@ -3,7 +3,8 @@
 module ctrl_verify
 (
     input   wire    [WIDTH_DATA-1 : 0]      data_in,
-    output  wire                            verify_en,
+    output  wire                            verify_vld,
+
     output  wire    [WIDTH_LENGTH-1 : 0]    length,
     output  wire    [WIDTH_CRC-1 : 0]       crc_16bit,
     output  wire    [WIDTH_PRIORITY-1 : 0]  priority
@@ -24,6 +25,6 @@ wire    [WIDTH_CRC-1 : 0]           crc_16bit;
 wire    [WIDTH_PRIORITY-1 : 0]      priority, priority_bar;
 
 assign {length_bar, length, crc_16bit, priority} = data_in;
-assign verify_en = length[WIDTH_PRIORITY-1 : 0] == ~length_bar;
+assign verify_vld = length[WIDTH_PRIORITY-1 : 0] == ~length_bar;
 
 endmodule

@@ -120,7 +120,7 @@ wire    [WIDTH_DATA-1 : 0]      ctrl_verify_in;
 ctrl_verify ctrl_verify_module
 (
     .data_in    (ctrl_verify_in),
-    .verify_en  (ctrl_verify),
+    .verify_vld (ctrl_verify),
     .length     (data_length_in)
 );
 

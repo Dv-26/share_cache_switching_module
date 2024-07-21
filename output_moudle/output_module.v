@@ -181,7 +181,7 @@ wire    ctrl_verify;
 ctrl_verify ctrl_verify_module
 (
     .data_in    (port_in),
-    .verify_en  (ctrl_verify)
+    .verify_vld (ctrl_verify)
 );
 
 
@@ -281,24 +281,7 @@ always @(*)begin
                 crc_rst = 1;
                 ctrl_data_rst[ruling_reg] = 1;
             end
-            
-            // crc_rst = 1;
-            // if(verify)begin
-            //     state_n = WAIT;
-            // end
-            // else begin
-            //     // fifo_rst = 1;
-            //     state_n = SCAN;
-            //     ctrl_data_rst[ruling_reg] = 1;
-            // end
         end
-        // WAIT:begin
-        //     tx_valid = 1;
-        //     if(tx_ready)begin
-        //         state_n = SCAN;
-        //         ctrl_data_rst[ruling_reg] = 1;
-        //     end
-        // end
     endcase
 end
 
@@ -409,13 +392,16 @@ always @(posedge external_clk or negedge rst_n)begin
         rd_vld <= 0;
     end
     else begin
-        rd_sop <= rd_sop_n && ~error_out;
-        rd_eop <= rd_eop_n && ~error_reg;
-        rd_vld <= rd_vld_n && ~error_reg;
+        rd_sop <= rd_sop_n;
+        rd_eop <= rd_eop_n;
+        rd_vld <= rd_vld_n;
+        // rd_sop <= rd_sop_n && ~error_out;
+        // rd_eop <= rd_eop_n && ~error_reg;
+        // rd_vld <= rd_vld_n && ~error_reg;
 
         if(out_sel)
             rd_data <= {NUB, priority_reg, package_length_reg};
-        else if(rd_vld_n && ~error_reg)
+        else if(rd_vld_n)
             rd_data <= fifo_rd_data;
         else
             rd_data <= 0;
