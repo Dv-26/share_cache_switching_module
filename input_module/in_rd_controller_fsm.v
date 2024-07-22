@@ -115,6 +115,7 @@ always @(*)begin
                 out_valid = 1'b1;
             out_sel = 1'b1;
             state_n = RD;
+            rd_en = 1'b1;
         end
         RD:begin
             if(!error_reg)
@@ -123,6 +124,7 @@ always @(*)begin
             rd_en = 1'b1;
             if(cnt_eq_length)begin
                 state_n = DONE;
+                rd_en = 1'b0;
             end
         end
         DONE:begin

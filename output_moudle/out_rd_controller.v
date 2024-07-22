@@ -85,12 +85,14 @@ always @(*)begin
             out_sel = 1;
             state_n = RD;
             length_add = 1;
+            fifo_rd_en = 1;
         end
         RD:begin
             rd_vld = 1;
             fifo_rd_en = 1;
             length_add = 1;
             if(length_eq)begin
+                fifo_rd_en = 0;
                 state_n = DONE;
             end
         end

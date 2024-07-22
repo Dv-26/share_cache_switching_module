@@ -20,7 +20,7 @@ module dc_fifo
     output  wire                        full
 );
 
-(*ram_style="block"*)reg     [DATA_BIT-1:0]      array_reg [DATA_DEPTH-1:0];
+// (*ram_style="block"*)reg     [DATA_BIT-1:0]      array_reg [DATA_DEPTH-1:0];
 
 localparam     WIDTH_ADDR = $clog2(DATA_DEPTH);
 
@@ -36,15 +36,47 @@ reg     [WIDTH_ADDR:0]      r_prt_gray_r,r_prt_gray_rr;
 wire    [WIDTH_ADDR:0]      r_prt_bin;
 reg     [WIDTH_ADDR-1:0]      rd_cnt_reg;
 
-always @(posedge wr_clk)begin
-    if(wr_en && !full_out_n)
-        array_reg [w_prt_reg[WIDTH_ADDR-1:0]] <= wr_data;
+always @(posedge wr_clk or negedge rst_n)begin
+    if(!rst_n)begin
+        w_prt_reg   <= {(WIDTH_ADDR+1){1'b0}};
+    end
+    else begin 
+        if(wr_en && ~full_out_n)
+            w_prt_reg <= w_prt_reg + 1;
+    end
 end
+// always @(posedge wr_clk)begin
+//     if(wr_en && !full_out_n)
+//         array_reg [w_prt_reg[WIDTH_ADDR-1:0]] <= wr_data;
+// end
+
+wire    [WIDTH_ADDR-1 : 0]  ram_wr_addr;
+wire    [WIDTH_ADDR-1 : 0]  ram_rd_addr;
+
+ram
+#(
+    .NAME(0),
+    .ADDR_WIDTH(WIDTH_ADDR),
+    .DATA_WIDTH(DATA_BIT)
+)
+ram
+(
+    .wr_clk(wr_clk),
+    .rd_clk(rd_clk),
+    .wr_en(wr_en && !full_out_n),
+    .wr_addr(ram_wr_addr),
+    .wr_data(wr_data),
+    .rd_en(rd_en && !empty_out_n),
+    .rd_data(rd_data),
+    .rd_addr(ram_rd_addr)
+);
+
+assign ram_wr_addr = w_prt_reg[WIDTH_ADDR-1 : 0];
+assign ram_rd_addr = r_prt_reg[WIDTH_ADDR-1 : 0];
 
 
 
-
-assign  rd_data = array_reg[r_prt_reg[WIDTH_ADDR-1:0]];
+// assign  rd_data = array_reg[r_prt_reg[WIDTH_ADDR-1:0]];
 assign w_prt_gray = (w_prt_reg >> 1) ^ w_prt_reg;
 
 always @(posedge wr_clk or negedge rst_n)begin
@@ -96,15 +128,6 @@ assign full = full_out_n;
 
 
 
-always @(posedge wr_clk or negedge rst_n)begin
-    if(!rst_n)begin
-        w_prt_reg   <= {(WIDTH_ADDR+1){1'b0}};
-    end
-    else begin 
-        if(wr_en && ~full_out_n)
-            w_prt_reg <= w_prt_reg + 1;
-    end
-end
 
 
 
@@ -161,8 +184,6 @@ assign empty_out_n = r_prt_gray == w_prt_gray_rr;
 /* end */
 
 assign empty = empty_out_n;
-
-
 
 always @(posedge rd_clk or negedge rst_n)begin
     if(!rst_n)begin
