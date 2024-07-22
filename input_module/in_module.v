@@ -49,7 +49,7 @@ wire                        error;
 dc_fifo 
 #(
     .DATA_BIT(DATA_WIDTH),
-    .DATA_DEPTH(256)
+    .DATA_DEPTH(512)
 )
 dc_fifo
 (

@@ -392,12 +392,12 @@ always @(posedge external_clk or negedge rst_n)begin
         rd_vld <= 0;
     end
     else begin
-        rd_sop <= rd_sop_n;
-        rd_eop <= rd_eop_n;
-        rd_vld <= rd_vld_n;
-        // rd_sop <= rd_sop_n && ~error_out;
-        // rd_eop <= rd_eop_n && ~error_reg;
-        // rd_vld <= rd_vld_n && ~error_reg;
+        // rd_sop <= rd_sop_n;
+        // rd_eop <= rd_eop_n;
+        // rd_vld <= rd_vld_n;
+        rd_sop <= rd_sop_n && ~error_out;
+        rd_eop <= rd_eop_n && ~error_reg;
+        rd_vld <= rd_vld_n && ~error_reg;
 
         if(out_sel)
             rd_data <= {NUB, priority_reg, package_length_reg};

@@ -14,7 +14,7 @@ module  mux_ctrl_1
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] rd_sel,
     output  wire    [WIDTH_SEL_TOTAL-1 : 0] mux_sel,
 
-    input   wire    [WIDTH_SEL_TOTAL-1 : 0] cnt_in,
+    input   wire    [WIDTH_SEL-1 : 0]       cnt_in,
     input   wire    [PORT_NUB-1 : 0]        full_in,
     input   wire    [PORT_NUB**2-1 : 0]     empty_in
 );
