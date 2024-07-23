@@ -207,6 +207,10 @@ vio_1 dispatch
   .probe_out2       (wrr_wieght[1]),            // output wire [2 : 0] probe_out2
   .probe_out3       (wrr_wieght[2]),            // output wire [2 : 0] probe_out3
   .probe_out4       (wrr_wieght[3])             // output wire [2 : 0] probe_out4
+  .probe_out5       (wrr_wieght[4])             // output wire [2 : 0] probe_out4
+  .probe_out6       (wrr_wieght[5])             // output wire [2 : 0] probe_out4
+  .probe_out7       (wrr_wieght[6])             // output wire [2 : 0] probe_out4
+  .probe_out8       (wrr_wieght[7])             // output wire [2 : 0] probe_out4
 );
 
 assign top_ready = {PORT_NUB{1'b1}};

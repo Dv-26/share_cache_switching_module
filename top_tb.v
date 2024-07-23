@@ -245,7 +245,7 @@ begin
         //     top_ready[0] = 1;
         wait(|send_ready)
             random_send();
-            #((100)*CLK_TIME);
+            #((120)*CLK_TIME);
     end
     #(600*CLK_TIME)
     #(2500*CLK_TIME)
